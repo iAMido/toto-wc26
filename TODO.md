@@ -27,25 +27,30 @@
 - [x] Install + init Tailwind CSS (PostCSS + autoprefixer), HSL CSS-vars theme
 - [x] shadcn config (`components.json`) + `Button` component + `cn()` util — remaining components (`input`, `card`, `dialog`, `toast`, `radio-group`, `switch`) added in their feature chunks
 - [x] `npm run build` is clean (0 errors, 170 KB gz 55 KB, SW generated)
-- [ ] Commit + push
+- [x] Commit + push
 
 ## Chunk 3 — Supabase Project + Schema (Migrations)
 
-- [ ] Create Supabase project (user supplies URL + anon key + service role key)
-- [ ] Write `supabase/migrations/0001_init.sql`
-  - [ ] `users` (synced from `auth.users` via trigger)
-  - [ ] `groups`, `group_members`
-  - [ ] `tournaments_players` (id, name_en, name_he, team, role)
-  - [ ] `matches` (api_fixture_id, kickoff_at, home_team, away_team, group_or_stage, status, home_score_120, away_score_120, advancer_team_id)
-  - [ ] `predictions` (user_id, match_id, home, away, joker_used, advancer_team_id, points NULL, created_at, locked_at)
-  - [ ] `tournament_predictions`
-- [ ] RLS: `predictions` SELECT — own rows always, others only when `now() >= kickoff_at`
-- [ ] RLS: `predictions` INSERT/UPDATE — only when `now() < kickoff_at` AND same group
-- [ ] RLS: `groups` / `group_members` — members read, creator invites
-- [ ] DB trigger: reject 4th `joker_used=true` for same tournament
-- [ ] Enable Realtime publication on `matches` table
-- [ ] Apply migration via Supabase MCP `apply_migration`
-- [ ] Commit + push
+> ⚠️ The Supabase MCP is currently connected to an unrelated project (running/coaching app, 15 tables). **User needs to create a fresh project at supabase.com/dashboard and reconnect the MCP** before `apply_migration` can run safely.
+
+- [ ] **BLOCKED:** Create fresh Supabase project `toto-wc26` + reconnect MCP (user action)
+- [x] Write `supabase/migrations/0001_init.sql`
+  - [x] `users` synced from `auth.users` via `handle_new_user` trigger
+  - [x] `tournaments` (single-row config with WC2026 `start_at`)
+  - [x] `groups`, `group_members` (8-char invite codes, composite PK)
+  - [x] `tournaments_players` (id, api_player_id, name_en, name_he, team, role with FW/MF/DF/GK check)
+  - [x] `matches` (api_fixture_id, kickoff_at, home_team, away_team, stage, status, home_score_120, away_score_120, advancer_team_id, updated_at)
+  - [x] `predictions` (user_id, match_id, home, away, joker_used, advancer_team_id, points, created_at, updated_at) with unique (user_id, match_id)
+  - [x] `tournament_predictions` (user_id PK, champion, runner-up, scorer/assister IDs + freetexts, locked_at)
+- [x] RLS: `predictions` SELECT — own rows always, others only when `now() >= kickoff_at` AND shared group
+- [x] RLS: `predictions` INSERT/UPDATE — only when `now() < kickoff_at` AND self
+- [x] RLS: `groups` / `group_members` — members read, creator inserts/updates, self join/leave
+- [x] RLS: `tournament_predictions` — own always, others after `tournaments.start_at`, self CRUD before start
+- [x] DB trigger: reject 4th `joker_used=true` per user (`enforce_joker_cap`)
+- [x] `touch_updated_at` trigger on predictions/matches/tournament_predictions
+- [x] Enable Realtime publication on `matches` (`alter publication supabase_realtime add table matches`)
+- [ ] **BLOCKED:** Apply migration via Supabase MCP `apply_migration` (waiting on fresh project)
+- [ ] Commit migration SQL + push (will commit now, mark migration "PENDING APPLY" in TODO)
 
 ## Chunk 4 — Scoring Engine (Postgres Function)
 
