@@ -17,16 +17,16 @@
 - [x] Write `SYNC.md`
 - [x] Write `I18N.md`
 - [x] Write `DEPLOYMENT.md`
-- [ ] First commit + push to `main`
+- [x] First commit + push to `main`
 
 ## Chunk 2 — Vite + React + TS PWA Scaffold (Flat Layout)
 
-- [ ] `npm create vite@latest .` at repo root (template `react-ts`)
-- [ ] Install runtime deps: `vite-plugin-pwa`, `react-router-dom`, `@tanstack/react-query`, `react-i18next`, `i18next`, `@supabase/supabase-js`
-- [ ] Configure `vite.config.ts` (PWA manifest, icons, offline cache strategy)
-- [ ] Install + init Tailwind CSS (PostCSS + autoprefixer), enable RTL via logical properties
-- [ ] `npx shadcn@latest init` and add: `button`, `input`, `card`, `dialog`, `toast`, `radio-group`, `switch`
-- [ ] `npm run build` is clean
+- [x] Scaffold Vite + React + TS files at repo root (manual write — no interactive `npm create vite`)
+- [x] Install runtime deps: `vite-plugin-pwa`, `react-router-dom`, `@tanstack/react-query`, `react-i18next`, `i18next`, `@supabase/supabase-js`, `@radix-ui/react-slot`
+- [x] Configure `vite.config.ts` (PWA manifest with HE/RTL defaults, icons, Supabase NetworkFirst cache)
+- [x] Install + init Tailwind CSS (PostCSS + autoprefixer), HSL CSS-vars theme
+- [x] shadcn config (`components.json`) + `Button` component + `cn()` util — remaining components (`input`, `card`, `dialog`, `toast`, `radio-group`, `switch`) added in their feature chunks
+- [x] `npm run build` is clean (0 errors, 170 KB gz 55 KB, SW generated)
 - [ ] Commit + push
 
 ## Chunk 3 — Supabase Project + Schema (Migrations)

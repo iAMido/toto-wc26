@@ -45,6 +45,9 @@ supabase/.env
 *.swo
 *~
 
+# --- Claude Code project state (transcripts, hooks) ---
+.claude/
+
 # --- OS ---
 .DS_Store
 Thumbs.db
