@@ -58,17 +58,18 @@
 
 ## Chunk 4 — Scoring Engine (Postgres Function)
 
-- [ ] Write `supabase/migrations/0002_scoring.sql`
-  - [ ] `score_match(match_id uuid)` function — +5 / +3 / +1 / 0 ladder
-  - [ ] Apply ×2 if `joker_used`
-  - [ ] Add +2 advancer bonus on `status='PEN'` AND correct advancer (after joker multiplier)
-  - [ ] Trigger on `matches` UPDATE → calls `score_match` when status hits `FT`/`AET`/`PEN` with non-null 120-min scores
-  - [ ] View `v_group_leaderboard` (group_id, user_id, total_points, jokers_used)
-- [ ] SQL fixture test: group-stage path
-- [ ] SQL fixture test: knockout AET path
-- [ ] SQL fixture test: knockout PEN + advancer bonus path
-- [ ] Apply migration
-- [ ] Commit + push
+- [x] Write `supabase/migrations/0002_scoring.sql`
+  - [x] `score_match(match_id uuid)` function — +5 / +3 / +1 / 0 ladder
+  - [x] Apply ×2 if `joker_used`
+  - [x] Add +2 advancer bonus on `status='PEN'` AND correct advancer (after joker multiplier)
+  - [x] Trigger `trg_match_finished` on `matches` UPDATE → calls `score_match` via `on_match_finished()` when status hits FT (group stage) or AET/PEN (knockouts) with non-null 120-min scores
+  - [x] View `v_group_leaderboard` (group_id, user_id, display_name, total_points, jokers_used, matches_scored)
+- [x] SQL fixture test: group-stage exact (+5), wrong (0), goal-diff+joker (+6) — all PASS
+- [x] SQL fixture test: knockout AET outcome match (+1), NOT scored at FT — PASS
+- [x] SQL fixture test: knockout PEN exact+advancer (+7), goal-diff+wrong-advancer (+3), exact+joker+advancer (+12) — all PASS
+- [x] Test data cleaned up from live DB
+- [x] Apply migration via MCP — success
+- [x] Commit + push
 
 ## Chunk 5 — Python Seeding Scripts
 
