@@ -64,6 +64,24 @@ function getGroupLetter(stage: string): string {
   return stage.replace('GROUP_', '');
 }
 
+/** Returns a human-readable countdown like "3d 5h" or "2h 30m" */
+function getCountdown(kickoffIso: string, lang: string): string | null {
+  const diff = new Date(kickoffIso).getTime() - Date.now();
+  if (diff <= 0) return null;
+
+  const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const m = Math.floor((diff / (1000 * 60)) % 60);
+
+  const dLabel = lang === 'he' ? 'י׳' : 'd';
+  const hLabel = lang === 'he' ? 'ש׳' : 'h';
+  const mLabel = lang === 'he' ? 'ד׳' : 'm';
+
+  if (d > 0) return `${d}${dLabel} ${h}${hLabel}`;
+  if (h > 0) return `${h}${hLabel} ${m}${mLabel}`;
+  return `${m}${mLabel}`;
+}
+
 /* ---------- component ---------- */
 
 export default function MatchListPage() {
@@ -316,14 +334,32 @@ export default function MatchListPage() {
                                 </div>
                               </div>
 
-                              {/* Status indicator */}
-                              {status === 'open' && (
-                                <div className="text-center mt-2">
-                                  <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
-                                    {t('match.status.open')}
-                                  </span>
-                                </div>
-                              )}
+                              {/* Status indicator with countdown */}
+                              {status === 'open' && (() => {
+                                const cd = getCountdown(m.kickoff_at, lang);
+                                return (
+                                  <div className="flex items-center justify-center gap-2 mt-2">
+                                    <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
+                                      {t('match.status.open')}
+                                    </span>
+                                    {cd && (
+                                      <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                        🔒 {cd}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                              {status === 'predicted' && (() => {
+                                const cd = getCountdown(m.kickoff_at, lang);
+                                return cd ? (
+                                  <div className="text-center mt-2">
+                                    <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                      🔒 {cd}
+                                    </span>
+                                  </div>
+                                ) : null;
+                              })()}
                               {status === 'locked' && !m._pred && (
                                 <div className="text-center mt-2">
                                   <span className="text-[10px] text-yellow-400 font-medium bg-yellow-400/10 px-2 py-0.5 rounded-full">

@@ -151,6 +151,43 @@
     "scoringDiff": "Goal difference = 3 pts",
     "scoringOutcome": "Correct outcome = 1 pt",
     "scoringJoker": "Joker doubles your points",
-    "scoringAdvancer": "Correct penalty winner = +2 bonus"
+    "scoringAdvancer": "Correct penalty winner = +2 bonus",
+    "yourPosition": "Your Position",
+    "inGroup": "in {{group}}"
+  },
+  "countdown": {
+    "closesIn": "Closes in",
+    "days": "d",
+    "hours": "h",
+    "minutes": "m",
+    "closed": "Closed"
+  },
+  "rules": {
+    "title": "How to Play",
+    "close": "Got it!",
+    "intro": "Predict the exact score for each World Cup match and compete with friends in private groups.",
+    "matchRulesTitle": "Match Predictions",
+    "rule1": "Predict the final score for each match (after extra time in knockouts).",
+    "rule2": "Predictions lock at kickoff — you can't change them after.",
+    "rule3": "Use up to 3 Jokers per tournament to double your points on your best guesses.",
+    "rule4": "In knockout matches, if you predict a draw, also pick who wins on penalties.",
+    "scoringTitle": "Scoring",
+    "scoringExact": "Exact score (e.g. 2-1 = 2-1)",
+    "scoringDiff": "Correct goal difference (e.g. 2-0 vs 3-1)",
+    "scoringOutcome": "Correct outcome only (1/X/2)",
+    "scoringWrong": "Wrong prediction",
+    "scoringJoker": "Joker multiplies your score",
+    "scoringAdvancer": "Correct penalty winner prediction",
+    "tournamentTitle": "Tournament Picks (15 pts each)",
+    "tournamentDesc": "Before the tournament starts, predict the Champion, Runner-up, Top Scorer, and Top Assister. Each correct pick = 15 points!",
+    "leaguesTitle": "Private Leagues",
+    "leaguesDesc": "Create a group, share the invite code with friends, and compete on a private leaderboard."
+  },
+  "pointsBreakdown": {
+    "title": "Points Breakdown",
+    "basePoints": "Base",
+    "jokerApplied": "Joker ×2",
+    "advancerCorrect": "Advancer bonus",
+    "total": "Total"
   }
 }

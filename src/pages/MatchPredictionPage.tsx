@@ -377,7 +377,7 @@ export default function MatchPredictionPage() {
 
         {/* Existing prediction summary when locked */}
         {isLocked && existing && (
-          <div className="bg-card rounded-2xl border border-border p-5 space-y-2">
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
             <h3 className="text-center font-bold text-sm text-muted-foreground">{t('match.prediction')}</h3>
             <div className="flex items-center justify-center gap-4">
               <span className="text-lg">{getFlag(match.home_team)}</span>
@@ -392,7 +392,64 @@ export default function MatchPredictionPage() {
                 {t('match.advancer')}: {getFlag(existing.advancer_team_id)} {getTeamName(existing.advancer_team_id, lang)}
               </p>
             )}
-            {existing.points != null && (
+
+            {/* Points breakdown */}
+            {existing.points != null && match.home_score_120 != null && (() => {
+              const predH = existing.home;
+              const predA = existing.away;
+              const actH = match.home_score_120!;
+              const actA = match.away_score_120!;
+
+              const isExact = predH === actH && predA === actA;
+              const isGoalDiff = !isExact && (predH - predA) === (actH - actA);
+              const predOutcome = predH > predA ? '1' : predH < predA ? '2' : 'X';
+              const actOutcome = actH > actA ? '1' : actH < actA ? '2' : 'X';
+              const isOutcome = !isExact && !isGoalDiff && predOutcome === actOutcome;
+
+              let basePoints = 0;
+              let baseLabel = t('scoring.wrong');
+              let baseColor = 'text-muted-foreground';
+              if (isExact) { basePoints = 5; baseLabel = t('scoring.exact'); baseColor = 'text-primary'; }
+              else if (isGoalDiff) { basePoints = 3; baseLabel = t('scoring.goalDiff'); baseColor = 'text-primary'; }
+              else if (isOutcome) { basePoints = 1; baseLabel = t('scoring.outcome'); baseColor = 'text-primary'; }
+
+              const jokerMultiplied = existing.joker_used ? basePoints * 2 : basePoints;
+              const hasAdvancerBonus = match.status === 'PEN' && existing.advancer_team_id === match.advancer_team_id && existing.advancer_team_id != null;
+              const total = jokerMultiplied + (hasAdvancerBonus ? 2 : 0);
+
+              return (
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <h4 className="text-xs font-bold text-center text-muted-foreground uppercase tracking-wider">
+                    {t('pointsBreakdown.title')}
+                  </h4>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5">
+                      <span className="text-xs text-muted-foreground">{baseLabel}</span>
+                      <span className={`text-sm font-bold ${baseColor}`}>+{basePoints}</span>
+                    </div>
+                    {existing.joker_used && (
+                      <div className="flex items-center justify-between bg-amber-900/20 rounded-lg px-3 py-1.5 border border-amber-700/20">
+                        <span className="text-xs text-amber-400">🃏 {t('pointsBreakdown.jokerApplied')}</span>
+                        <span className="text-sm font-bold text-amber-400">×2 = {jokerMultiplied}</span>
+                      </div>
+                    )}
+                    {hasAdvancerBonus && (
+                      <div className="flex items-center justify-between bg-emerald-900/20 rounded-lg px-3 py-1.5 border border-emerald-700/20">
+                        <span className="text-xs text-emerald-400">{t('pointsBreakdown.advancerCorrect')}</span>
+                        <span className="text-sm font-bold text-emerald-400">+2</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between bg-primary/10 rounded-lg px-3 py-2 border border-primary/20">
+                      <span className="text-sm font-bold">{t('pointsBreakdown.total')}</span>
+                      <span className="text-xl font-black text-primary">+{total}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Simple points display when no actual result yet */}
+            {existing.points != null && match.home_score_120 == null && (
               <p className="text-center font-bold text-primary text-lg">
                 +{existing.points} {t('leaderboard.points')}
               </p>

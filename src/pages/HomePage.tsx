@@ -5,12 +5,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
+import HowToPlayModal from '@/components/HowToPlayModal';
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const { user, loading } = useRequireAuth();
   const { data: jokerBudget } = useJokerBudget();
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   // Countdown to tournament start (June 11, 2026)
   const TOURNAMENT_START = new Date('2026-06-11T22:00:00+03:00');
@@ -48,6 +50,46 @@ export default function HomePage() {
     enabled: !!user,
   });
 
+  // Fetch user's groups + standings
+  const { data: groupStandings } = useQuery({
+    queryKey: ['home-standings', user?.id],
+    queryFn: async () => {
+      // Get user's groups
+      const { data: memberships, error: memErr } = await supabase
+        .from('group_members')
+        .select('group_id, groups(id, name)')
+        .eq('user_id', user!.id);
+      if (memErr) throw memErr;
+      if (!memberships || memberships.length === 0) return [];
+
+      // For each group, get the leaderboard to find user's position
+      const results = [];
+      for (const m of memberships) {
+        const g = m.groups as unknown as { id: string; name: string };
+        const { data: lb } = await supabase
+          .from('v_group_leaderboard')
+          .select('user_id, total_points')
+          .eq('group_id', g.id)
+          .order('total_points', { ascending: false });
+
+        const rank = lb ? lb.findIndex((r) => r.user_id === user!.id) + 1 : 0;
+        const totalMembers = lb?.length ?? 0;
+        const points = lb?.find((r) => r.user_id === user!.id)?.total_points ?? 0;
+
+        results.push({
+          groupId: g.id,
+          groupName: g.name,
+          rank,
+          totalMembers,
+          points,
+        });
+      }
+      return results;
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -81,12 +123,20 @@ export default function HomePage() {
         >
           {t('nav.switchLang')}
         </button>
-        <button
-          onClick={handleSignOut}
-          className="text-xs text-muted-foreground hover:text-destructive transition-colors px-2 py-1 rounded-md hover:bg-muted"
-        >
-          {t('nav.signOut')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setRulesOpen(true)}
+            className="text-xs text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-md hover:bg-primary/10 font-medium"
+          >
+            {t('rules.title')} ❓
+          </button>
+          <button
+            onClick={handleSignOut}
+            className="text-xs text-muted-foreground hover:text-destructive transition-colors px-2 py-1 rounded-md hover:bg-muted"
+          >
+            {t('nav.signOut')}
+          </button>
+        </div>
       </header>
 
       <div className="max-w-lg mx-auto px-4 pb-4 space-y-5">
@@ -216,7 +266,39 @@ export default function HomePage() {
             <span className="text-xs text-amber-400/80 ms-2">{t('scoring.advancerBonus')}</span>
           </div>
         </div>
+
+        {/* Group standings snapshot */}
+        {groupStandings && groupStandings.length > 0 && (
+          <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+            <h3 className="text-sm font-bold text-center">{t('home.yourPosition')}</h3>
+            <div className="space-y-2">
+              {groupStandings.map((gs) => (
+                <Link key={gs.groupId} to={`/groups/${gs.groupId}`} className="block">
+                  <div className="bg-muted/30 rounded-xl p-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold text-primary">
+                        {gs.rank > 0 ? (gs.rank === 1 ? '🥇' : gs.rank === 2 ? '🥈' : gs.rank === 3 ? '🥉' : `#${gs.rank}`) : '—'}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium">{gs.groupName}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {gs.rank > 0
+                            ? `${gs.rank}/${gs.totalMembers}`
+                            : lang === 'he' ? 'אין ניקוד עדיין' : 'No scores yet'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-sm font-bold text-primary">{gs.points} {t('leaderboard.points')}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* How to play modal */}
+      <HowToPlayModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </div>
   );
 }
