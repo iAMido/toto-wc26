@@ -37,7 +37,7 @@
 - [x] Add project-scoped MCP via `claude mcp add --scope project ... project_ref=zxexfeihapgecttjtsbu` (file: `.mcp.json`)
 - [x] Write `.env.local` (gitignored) with `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
 - [x] Add `supabase.txt` / `secrets.txt` / `credentials.txt` to `.gitignore` so the credentials dump never leaks
-- [ ] **NEXT (user action):** Restart Claude Code and authenticate the new supabase MCP (OAuth) — then I'll apply migration 0001
+- [x] Restart Claude Code + authenticate new supabase MCP (OAuth)
 - [x] Write `supabase/migrations/0001_init.sql`
   - [x] `users` synced from `auth.users` via `handle_new_user` trigger
   - [x] `tournaments` (single-row config with WC2026 `start_at`)
@@ -53,8 +53,8 @@
 - [x] DB trigger: reject 4th `joker_used=true` per user (`enforce_joker_cap`)
 - [x] `touch_updated_at` trigger on predictions/matches/tournament_predictions
 - [x] Enable Realtime publication on `matches` (`alter publication supabase_realtime add table matches`)
-- [ ] **BLOCKED:** Apply migration via Supabase MCP `apply_migration` (waiting on fresh project)
-- [ ] Commit migration SQL + push (will commit now, mark migration "PENDING APPLY" in TODO)
+- [x] Apply migration via Supabase MCP `apply_migration` — success, 8 tables + RLS + triggers + Realtime
+- [x] Commit + push
 
 ## Chunk 4 — Scoring Engine (Postgres Function)
 
