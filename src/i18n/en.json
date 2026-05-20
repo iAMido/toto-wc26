@@ -76,7 +76,13 @@
     "player": "Player",
     "points": "Pts",
     "jokers": "Jokers",
-    "matches": "Scored"
+    "matches": "Scored",
+    "matchPoints": "Match",
+    "tournamentPoints": "Tourn.",
+    "exactScores": "Exact",
+    "totalPoints": "Total",
+    "noResultsYet": "No points yet. Standings will appear once the first matches finish.",
+    "you": "You"
   },
   "tournament": {
     "title": "Tournament Predictions",
@@ -182,13 +188,22 @@
     "scoringWrong": "Wrong prediction",
     "scoringJoker": "Joker multiplies your score",
     "scoringAdvancer": "Correct penalty winner prediction",
-    "tournamentTitle": "Tournament Picks (15 pts each)",
-    "tournamentDesc": "Before the tournament starts, predict the Champion, Runner-up, Top Scorer, and Top Assister. Each correct pick = 15 points!",
+    "tournamentTitle": "Tournament Picks",
+    "tournamentDesc": "Before the tournament starts, predict the Champion, Runner-up, Top Scorer, and Top Assister. Awards are added to your total at the end of the tournament.",
+    "outrightChampion": "World Champion — you predicted the eventual winner",
+    "outrightRunnerup": "Runner-up — you predicted the team that loses the final",
+    "outrightScorer": "Top Scorer — you predicted the leading goal-scorer",
+    "outrightAssister": "Top Assister — you predicted the leading assists provider",
     "leaguesTitle": "Private Leagues",
     "leaguesDesc": "Create a group, share the invite code with friends, and compete on a private leaderboard."
   },
   "profile": {
-    "title": "Profile"
+    "title": "Profile",
+    "editName": "Edit name",
+    "displayName": "Display name",
+    "saveName": "Save name",
+    "nameSaved": "Name updated!",
+    "nameTooShort": "Name must be at least 2 characters"
   },
   "onboarding": {
     "title": "Getting Started",

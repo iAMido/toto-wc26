@@ -1,14 +1,62 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function ProfilePage() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const { user, loading: authLoading } = useRequireAuth();
   const { data: jokerBudget } = useJokerBudget();
+  const queryClient = useQueryClient();
+
+  // Display-name edit state
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [nameMsg, setNameMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialise draft from current user; auto-focus input when entering edit mode
+  useEffect(() => {
+    if (editingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [editingName]);
+
+  const saveName = useMutation({
+    mutationFn: async (newName: string) => {
+      const trimmed = newName.trim();
+      if (trimmed.length < 2) throw new Error('TOO_SHORT');
+      // Write to BOTH auth metadata (for client display) and public.users
+      // (for leaderboard joins). RLS lets users update their own row.
+      const [authRes, dbRes] = await Promise.all([
+        supabase.auth.updateUser({ data: { display_name: trimmed } }),
+        supabase.from('users').update({ display_name: trimmed }).eq('id', user!.id),
+      ]);
+      if (authRes.error) throw authRes.error;
+      if (dbRes.error) throw dbRes.error;
+      return trimmed;
+    },
+    onSuccess: () => {
+      setNameMsg({ ok: true, text: t('profile.nameSaved') });
+      setEditingName(false);
+      // Refresh anything that displays the name
+      queryClient.invalidateQueries({ queryKey: ['group-members'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+      queryClient.invalidateQueries({ queryKey: ['home-standings'] });
+      setTimeout(() => setNameMsg(null), 2500);
+    },
+    onError: (err: Error) => {
+      const msg = err.message === 'TOO_SHORT' ? t('profile.nameTooShort') : err.message;
+      setNameMsg({ ok: false, text: msg });
+      setTimeout(() => setNameMsg(null), 3500);
+    },
+  });
 
   // Prediction stats
   const { data: stats } = useQuery({
@@ -82,8 +130,61 @@ export default function ProfilePage() {
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary mx-auto mb-3">
             {initial}
           </div>
-          <h1 className="text-xl font-bold">{displayName}</h1>
-          <p className="text-xs text-muted-foreground" dir="ltr">{email}</p>
+
+          {/* Name display / edit toggle */}
+          {!editingName ? (
+            <div className="inline-flex items-center gap-2">
+              <h1 className="text-xl font-bold">{displayName}</h1>
+              <button
+                type="button"
+                onClick={() => { setNameDraft(displayName); setEditingName(true); }}
+                className="text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-1.5 py-0.5"
+                aria-label={t('profile.editName')}
+              >
+                ✏ {t('profile.editName')}
+              </button>
+            </div>
+          ) : (
+            <div className="max-w-xs mx-auto space-y-2 text-start">
+              <label className="text-xs text-muted-foreground block">{t('profile.displayName')}</label>
+              <Input
+                ref={nameInputRef}
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); saveName.mutate(nameDraft); }
+                  if (e.key === 'Escape') { setEditingName(false); setNameMsg(null); }
+                }}
+                maxLength={40}
+                className="rounded-xl bg-muted/50 text-center text-lg font-bold"
+                aria-label={t('profile.displayName')}
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => saveName.mutate(nameDraft)}
+                  disabled={saveName.isPending || nameDraft.trim().length < 2}
+                  className="flex-1 rounded-xl h-10 text-sm font-bold"
+                >
+                  {t('profile.saveName')}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { setEditingName(false); setNameMsg(null); }}
+                  className="rounded-xl h-10 text-sm"
+                >
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {nameMsg && (
+            <p className={`text-xs mt-2 ${nameMsg.ok ? 'text-primary' : 'text-destructive'}`} role="status">
+              {nameMsg.text}
+            </p>
+          )}
+
+          <p className="text-xs text-muted-foreground mt-1" dir="ltr">{email}</p>
         </div>
 
         {/* Completion progress */}

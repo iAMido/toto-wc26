@@ -152,39 +152,69 @@ export default function GroupDetailPage() {
         {/* Match Feed */}
         {user && <GroupMatchFeed groupId={id!} userId={user.id} />}
 
-        {/* Leaderboard */}
+        {/* ====== FULL LEADERBOARD ====== */}
+        {/* Always render the table when there are members, even before any
+            scoring has happened — gives users a sense of who's in the group. */}
         {leaderboard && leaderboard.length > 0 && (
-          <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-            <h2 className="font-bold text-sm text-center">{t('leaderboard.title')}</h2>
-            <div className="space-y-1">
-              <div className="flex items-center text-[10px] font-medium text-muted-foreground border-b border-border pb-2 mb-1 uppercase tracking-wider">
-                <span className="w-8 text-center">{t('leaderboard.rank')}</span>
-                <span className="flex-1 ps-2">{t('leaderboard.player')}</span>
-                <span className="w-12 text-center">{t('leaderboard.points')}</span>
-                <span className="w-12 text-center">{t('leaderboard.jokers')}</span>
-              </div>
-              {leaderboard.map((row, i) => (
-                <div
-                  key={row.user_id}
-                  className={`flex items-center py-2 rounded-lg px-1 ${
-                    row.user_id === user?.id ? 'bg-primary/10' : ''
-                  }`}
-                >
-                  <span className="w-8 text-center text-sm font-bold">
-                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
-                  </span>
-                  <span className="flex-1 ps-2 text-sm truncate font-medium">
-                    {row.display_name || '—'}
-                  </span>
-                  <span className="w-12 text-center text-sm font-bold text-primary">
-                    {row.total_points ?? 0}
-                  </span>
-                  <span className="w-12 text-center text-xs text-muted-foreground">
-                    {row.jokers_used ?? 0}/3
-                  </span>
-                </div>
-              ))}
-            </div>
+          <div className="bg-card rounded-2xl border border-border p-3 space-y-3">
+            <h2 className="font-bold text-sm text-center">🏅 {t('leaderboard.title')}</h2>
+
+            {/* Sort by total_points DESC (the view already orders, but apply locally for safety) */}
+            {(() => {
+              const sorted = [...leaderboard].sort(
+                (a, b) => (b.total_points ?? 0) - (a.total_points ?? 0),
+              );
+              const allZero = sorted.every((r) => (r.total_points ?? 0) === 0);
+              return (
+                <>
+                  {/* Header row */}
+                  <div className="grid grid-cols-[2rem_1fr_3rem_3rem_2.5rem_3rem] gap-1 text-[10px] font-bold text-muted-foreground border-b border-border pb-2 uppercase tracking-wider">
+                    <span className="text-center">{t('leaderboard.rank')}</span>
+                    <span className="ps-1">{t('leaderboard.player')}</span>
+                    <span className="text-center" title={t('leaderboard.matchPoints')}>{t('leaderboard.matchPoints')}</span>
+                    <span className="text-center" title={t('leaderboard.tournamentPoints')}>{t('leaderboard.tournamentPoints')}</span>
+                    <span className="text-center" title={t('leaderboard.exactScores')}>{t('leaderboard.exactScores')}</span>
+                    <span className="text-center font-extrabold text-primary">{t('leaderboard.totalPoints')}</span>
+                  </div>
+
+                  {/* Body rows */}
+                  <div className="space-y-1">
+                    {sorted.map((row, i) => {
+                      const isMe = row.user_id === user?.id;
+                      const rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
+                      return (
+                        <div
+                          key={row.user_id}
+                          className={`grid grid-cols-[2rem_1fr_3rem_3rem_2.5rem_3rem] gap-1 items-center py-2 px-1 rounded-lg tabular-nums ${
+                            isMe ? 'bg-primary/15 border border-primary/30 shadow-sm' : ''
+                          }`}
+                        >
+                          <span className="text-center text-sm font-black">{rankIcon}</span>
+                          <span className="ps-1 text-sm truncate font-semibold">
+                            {row.display_name || '—'}
+                            {isMe && <span className="ms-1.5 text-[9px] text-primary font-bold">({t('leaderboard.you')})</span>}
+                          </span>
+                          <span className="text-center text-xs font-bold">{row.match_points ?? 0}</span>
+                          <span className={`text-center text-xs ${row.tournament_points ? 'font-bold text-amber-400' : 'text-muted-foreground/50'}`}>
+                            {row.tournament_points ?? 0}
+                          </span>
+                          <span className="text-center text-xs text-emerald-400 font-medium">{row.exact_scores ?? 0}</span>
+                          <span className="text-center text-base font-black text-primary">
+                            {row.total_points ?? 0}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {allZero && (
+                    <p className="text-[11px] text-muted-foreground text-center pt-2 border-t border-border/50">
+                      {t('leaderboard.noResultsYet')}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

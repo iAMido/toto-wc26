@@ -66,12 +66,28 @@ export default function HowToPlayModal({ open, onClose }: Props) {
             </div>
           </div>
 
-          {/* Tournament Picks */}
+          {/* Tournament Picks (outrights) */}
           <div className="space-y-2">
             <h3 className="text-sm font-bold flex items-center gap-2">
               <span>🏆</span> {t('rules.tournamentTitle')}
             </h3>
             <p className="text-sm text-muted-foreground">{t('rules.tournamentDesc')}</p>
+            <div className="space-y-1.5 pt-1">
+              {[
+                { key: 'outrightChampion', pts: '+20', icon: '🥇' },
+                { key: 'outrightRunnerup', pts: '+15', icon: '🥈' },
+                { key: 'outrightScorer',   pts: '+25', icon: '⚽' },
+                { key: 'outrightAssister', pts: '+25', icon: '👟' },
+              ].map(({ key, pts, icon }) => (
+                <div key={key} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+                  <span className="text-sm text-muted-foreground flex items-center gap-2">
+                    <span className="text-base">{icon}</span>
+                    <span>{t(`rules.${key}`)}</span>
+                  </span>
+                  <span className="text-sm font-bold text-primary tabular-nums">{pts}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Private Leagues */}
