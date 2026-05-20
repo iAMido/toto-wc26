@@ -83,10 +83,15 @@
 
 ## Chunk 6 — Live Sync Edge Function + pg_cron
 
-- [ ] `supabase/functions/sync-fixtures/index.ts` — daily date query + per-match status update
-- [ ] `supabase/migrations/0003_cron.sql` — enable `pg_cron`, schedule every 20 min between 10:00–02:00 UTC
-- [ ] Smoke-test via manual `supabase functions invoke`
-- [ ] Commit + push
+- [x] `supabase/functions/sync-fixtures/index.ts` — checks ±3h window for active matches, single API-Football call per date, updates statuses + scores, fires scoring trigger
+- [x] `supabase/migrations/0003_cron.sql` — enables `pg_cron` + `pg_net`, schedules every 20 min during June-July 0-2h + 10-23h UTC
+- [ ] **Operational (user action, before tournament):**
+  - [ ] Enable `pg_cron` + `pg_net` extensions in Supabase dashboard
+  - [ ] `supabase functions deploy sync-fixtures`
+  - [ ] `supabase secrets set API_FOOTBALL_KEY=<your-key>`
+  - [ ] Apply migration 0003 via MCP `apply_migration`
+  - [ ] Smoke-test via `supabase functions invoke sync-fixtures`
+- [x] Commit + push
 
 ## Chunk 7 — Auth + i18n Shell + Joker Budget State
 
