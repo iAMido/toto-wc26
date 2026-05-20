@@ -163,6 +163,27 @@
   .score-stepper-value.has-value {
     @apply bg-primary text-primary-foreground border-primary;
   }
+  /* When the value is a native <input type=number>, style it like the circle
+     above but make the digit editable. Hide the browser spinners — we already
+     have +/− buttons flanking it. */
+  .score-stepper-input {
+    @apply text-center font-black tabular-nums;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    outline: none;
+    caret-color: hsl(var(--primary));
+  }
+  .score-stepper-input::-webkit-outer-spin-button,
+  .score-stepper-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .score-stepper-input:focus-visible {
+    @apply ring-2 ring-ring ring-offset-1 ring-offset-card;
+  }
+  .score-stepper-input::placeholder {
+    @apply text-muted-foreground/50;
+  }
 
   /* ---------- Score input circle (legacy — MatchPredictionPage) ---------- */
   .score-circle {
@@ -266,10 +287,16 @@
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
 
-  /* Team name truncation */
+  /* Team name truncation. Hebrew glyphs read smaller than Latin at the same
+     font-size, so we bump up a tier from text-xs to text-sm and add a per-lang
+     RTL boost for Hebrew. */
   .team-name {
-    @apply text-xs font-bold truncate;
-    max-width: 7rem;
+    @apply text-sm font-bold truncate;
+    max-width: 9rem;
+  }
+  :root[lang="he"] .team-name {
+    font-size: 0.95rem; /* ~15px — closer to Latin's perceived size */
+    line-height: 1.25;
   }
 
   /* Sticky date/stage headers */

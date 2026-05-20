@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { getFlag, getTeamName } from '@/lib/team-utils';
+import { getTeamName } from '@/lib/team-utils';
+import TeamFlag from '@/components/TeamFlag';
 
 /* ---------- helpers ---------- */
 
@@ -98,11 +99,11 @@ function FeedMatchCard({
 
         {/* Teams */}
         <div className="flex items-center justify-center gap-3 text-sm">
-          <span>{getFlag(match.home_team)}</span>
+          <TeamFlag team={match.home_team} size="sm" />
           <span className="font-medium">{getTeamName(match.home_team, lang)}</span>
           <span className="text-xs text-muted-foreground">vs</span>
           <span className="font-medium">{getTeamName(match.away_team, lang)}</span>
-          <span>{getFlag(match.away_team)}</span>
+          <TeamFlag team={match.away_team} size="sm" />
         </div>
 
         {/* Members' predictions */}

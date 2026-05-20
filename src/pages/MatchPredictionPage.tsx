@@ -6,7 +6,8 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useJokerBudget, useInvalidateJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { getFlag, getTeamName } from '@/lib/team-utils';
+import { getTeamName } from '@/lib/team-utils';
+import TeamFlag from '@/components/TeamFlag';
 
 /* ---------- constants ---------- */
 
@@ -207,8 +208,8 @@ export default function MatchPredictionPage() {
         <div className="bg-card rounded-2xl border border-border p-5">
           <div className="flex items-center justify-between gap-3">
             {/* Home team */}
-            <div className="flex-1 text-center">
-              <span className="text-4xl block mb-2">{getFlag(match.home_team)}</span>
+            <div className="flex-1 flex flex-col items-center gap-2">
+              <TeamFlag team={match.home_team} size="lg" />
               <span className="text-sm font-bold block">{getTeamName(match.home_team, lang)}</span>
             </div>
 
@@ -231,8 +232,8 @@ export default function MatchPredictionPage() {
             </div>
 
             {/* Away team */}
-            <div className="flex-1 text-center">
-              <span className="text-4xl block mb-2">{getFlag(match.away_team)}</span>
+            <div className="flex-1 flex flex-col items-center gap-2">
+              <TeamFlag team={match.away_team} size="lg" />
               <span className="text-sm font-bold block">{getTeamName(match.away_team, lang)}</span>
             </div>
           </div>
@@ -344,7 +345,7 @@ export default function MatchPredictionPage() {
                         : 'border-border hover:bg-muted/50'}
                     `}
                   >
-                    <span className="text-2xl block mb-1">{getFlag(team)}</span>
+                    <div className="flex justify-center mb-1"><TeamFlag team={team} size="md" /></div>
                     <span className="text-xs font-medium">{getTeamName(team, lang)}</span>
                   </button>
                 ))}
@@ -380,16 +381,16 @@ export default function MatchPredictionPage() {
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
             <h3 className="text-center font-bold text-sm text-muted-foreground">{t('match.prediction')}</h3>
             <div className="flex items-center justify-center gap-4">
-              <span className="text-lg">{getFlag(match.home_team)}</span>
+              <TeamFlag team={match.home_team} size="sm" />
               <span className="text-2xl font-bold">{existing.home}</span>
               <span className="text-muted-foreground">:</span>
               <span className="text-2xl font-bold">{existing.away}</span>
-              <span className="text-lg">{getFlag(match.away_team)}</span>
+              <TeamFlag team={match.away_team} size="sm" />
             </div>
             {existing.joker_used && <p className="text-center text-sm">🃏 {t('joker.active')}</p>}
             {existing.advancer_team_id && (
-              <p className="text-center text-xs text-muted-foreground">
-                {t('match.advancer')}: {getFlag(existing.advancer_team_id)} {getTeamName(existing.advancer_team_id, lang)}
+              <p className="text-center text-xs text-muted-foreground inline-flex items-center gap-1.5 justify-center">
+                {t('match.advancer')}: <TeamFlag team={existing.advancer_team_id} size="sm" /> {getTeamName(existing.advancer_team_id, lang)}
               </p>
             )}
 

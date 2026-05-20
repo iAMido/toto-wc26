@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useJokerBudget, useInvalidateJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
-import { getFlag, getTeamName, getCode, getPlaceholderLabel } from '@/lib/team-utils';
+import { getTeamName, getPlaceholderLabel } from '@/lib/team-utils';
+import TeamFlag from '@/components/TeamFlag';
 
 /* ---------- constants ---------- */
 
@@ -74,7 +75,8 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
   const [awayScore, setAwayScore] = useState<number | null>(prediction != null ? prediction.away : null);
   const [jokerUsed, setJokerUsed] = useState(prediction?.joker_used ?? false);
   const [advancer, setAdvancer] = useState<string | null>(prediction?.advancer_team_id ?? null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  // 'error' = generic server failure; 'locked' = RLS rejected (kickoff passed)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'locked'>('idle');
 
   // Sync from prediction prop
   useEffect(() => {
@@ -125,12 +127,16 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
     const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const h = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
     const m = Math.floor((diffMs / (1000 * 60)) % 60);
-    const dL = lang === 'he' ? 'י׳' : 'd';
-    const hL = lang === 'he' ? 'ש׳' : 'h';
-    const mL = lang === 'he' ? 'ד׳' : 'm';
-    if (d > 0) return `${d}${dL} ${h}${hL}`;
-    if (h > 0) return `${h}${hL} ${m}${mL}`;
-    return `${m}${mL}`;
+    if (lang === 'he') {
+      // Hebrew renders RTL; largest unit reads first (right side of chip).
+      // Use full words for clarity: "3 ימים 5 שעות".
+      if (d > 0) return `${d} ימים ${h} שעות`;
+      if (h > 0) return `${h} שעות ${m} דקות`;
+      return `${m} דקות`;
+    }
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
   };
   const countdown = getCountdownStr();
 
@@ -167,21 +173,28 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
       queryClient.invalidateQueries({ queryKey: ['match-day'] });
       setTimeout(() => setSaveStatus('idle'), 2000);
     },
-    onError: (err: Error) => {
-      const locked =
-        err.message.includes('row-level security') ||
-        err.message.includes('violates') ||
-        err.message.includes('new row');
-      setSaveStatus('error');
-      if (locked) {
-        // Revert optimistic state
+    onError: (err: Error & { code?: string; status?: number }) => {
+      const msg = err.message ?? '';
+      // 403 + RLS phrase = genuine kickoff lock. Everything else (500s, 4xx
+      // from constraint violations, network errors) is a generic server error
+      // and should NOT masquerade as "match started".
+      const isRlsLock = msg.includes('row-level security') || msg.includes('new row violates');
+      setSaveStatus(isRlsLock ? 'locked' : 'error');
+      if (isRlsLock) {
+        // Roll back optimistic state to what was last saved
         if (prediction) {
           setHomeScore(prediction.home);
           setAwayScore(prediction.away);
           setJokerUsed(prediction.joker_used);
+          setAdvancer(prediction.advancer_team_id ?? null);
+        } else {
+          setHomeScore(null);
+          setAwayScore(null);
+          setJokerUsed(false);
+          setAdvancer(null);
         }
       }
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      setTimeout(() => setSaveStatus('idle'), 3500);
     },
   });
 
@@ -237,6 +250,23 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
     const next = !jokerUsed;
     setJokerUsed(next);
     scheduleAutoSave(homeScore, awayScore, next, advancer);
+  };
+
+  /* ---- direct numeric input handlers ---- */
+  // User can tap the score number and type any value 0-30, instead of using +/−.
+  const setHomeDirect = (raw: string) => {
+    if (raw === '') { setHomeScore(null); return; }
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0 || n > 30) return;
+    setHomeScore(n);
+    scheduleAutoSave(n, awayScore, jokerUsed, advancer);
+  };
+  const setAwayDirect = (raw: string) => {
+    if (raw === '') { setAwayScore(null); return; }
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0 || n > 30) return;
+    setAwayScore(n);
+    scheduleAutoSave(homeScore, n, jokerUsed, advancer);
   };
 
   const pickAdvancer = (team: string) => {
@@ -312,7 +342,10 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
               {lang === 'he' ? 'טרם נקבע' : 'TBD'}
             </span>
           ) : !isLocked && countdown ? (
-            <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
+            <span
+              dir={lang === 'he' ? 'rtl' : 'ltr'}
+              className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full"
+            >
               {countdown}
             </span>
           ) : isLocked && !isFinished ? (
@@ -329,11 +362,7 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
         {/* Teams row */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            {isTbdHome ? (
-              <span className="text-2xl shrink-0 grayscale opacity-40" aria-hidden="true">🛡️</span>
-            ) : (
-              <span className="text-2xl shrink-0" aria-hidden="true">{getFlag(match.home_team as string)}</span>
-            )}
+            <TeamFlag team={isTbdHome ? null : match.home_team} size="md" />
             <span className={`team-name ${isTbdHome ? 'text-muted-foreground italic' : ''}`}>
               {homeLabel}
             </span>
@@ -362,11 +391,7 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
             <span className={`team-name text-end ${isTbdAway ? 'text-muted-foreground italic' : ''}`}>
               {awayLabel}
             </span>
-            {isTbdAway ? (
-              <span className="text-2xl shrink-0 grayscale opacity-40" aria-hidden="true">🛡️</span>
-            ) : (
-              <span className="text-2xl shrink-0" aria-hidden="true">{getFlag(match.away_team as string)}</span>
-            )}
+            <TeamFlag team={isTbdAway ? null : match.away_team} size="md" />
           </div>
         </div>
 
@@ -444,22 +469,21 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
           ) : !isLocked ? (
             /* ---------- PREDICTION FORM ---------- */
             <>
-              {/* Team display */}
-              <div className="flex items-center justify-between px-2">
-                <div className="text-center flex-1">
-                  <span className="text-4xl block" aria-hidden="true">{getFlag(match.home_team)}</span>
-                  <span className="text-sm font-black block mt-1">{getCode(match.home_team)}</span>
-                  <span className="text-[10px] text-muted-foreground block truncate px-1">{getTeamName(match.home_team, lang)}</span>
+              {/* Team display — SVG flag + name, no 3-letter codes */}
+              <div className="flex items-center justify-between px-2 gap-2">
+                <div className="flex flex-col items-center text-center flex-1 min-w-0 gap-1">
+                  <TeamFlag team={match.home_team} size="lg" />
+                  <span className="text-sm font-bold truncate w-full px-1">{getTeamName(match.home_team, lang)}</span>
                 </div>
                 <span className="text-xs font-bold text-muted-foreground/50">vs</span>
-                <div className="text-center flex-1">
-                  <span className="text-4xl block" aria-hidden="true">{getFlag(match.away_team)}</span>
-                  <span className="text-sm font-black block mt-1">{getCode(match.away_team)}</span>
-                  <span className="text-[10px] text-muted-foreground block truncate px-1">{getTeamName(match.away_team, lang)}</span>
+                <div className="flex flex-col items-center text-center flex-1 min-w-0 gap-1">
+                  <TeamFlag team={match.away_team} size="lg" />
+                  <span className="text-sm font-bold truncate w-full px-1">{getTeamName(match.away_team, lang)}</span>
                 </div>
               </div>
 
-              {/* Score steppers: − [ N ] + : − [ N ] + */}
+              {/* Score steppers: − [ input ] + : − [ input ] +
+                  The number is also a native numeric input — tap to type any value 0-30. */}
               <div className="flex items-center justify-center gap-3">
                 {/* Home stepper */}
                 <div className="score-stepper" role="group" aria-label={`${getTeamName(match.home_team, lang)} score`}>
@@ -472,14 +496,23 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                   >
                     −
                   </button>
-                  <div className={`score-stepper-value ${homeScore != null ? 'has-value' : ''}`}>
-                    {homeScore != null ? homeScore : '–'}
-                  </div>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={0}
+                    max={30}
+                    value={homeScore ?? ''}
+                    onChange={(e) => setHomeDirect(e.target.value)}
+                    onClick={(e) => { e.stopPropagation(); (e.target as HTMLInputElement).select(); }}
+                    aria-label={`${getTeamName(match.home_team, lang)} score`}
+                    className={`score-stepper-value score-stepper-input ${homeScore != null ? 'has-value' : ''}`}
+                  />
                   <button
                     type="button"
                     className="score-stepper-btn"
                     onClick={incHome}
-                    disabled={homeScore != null && homeScore >= 9}
+                    disabled={homeScore != null && homeScore >= 30}
                     aria-label="Increase"
                   >
                     +
@@ -499,14 +532,23 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                   >
                     −
                   </button>
-                  <div className={`score-stepper-value ${awayScore != null ? 'has-value' : ''}`}>
-                    {awayScore != null ? awayScore : '–'}
-                  </div>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={0}
+                    max={30}
+                    value={awayScore ?? ''}
+                    onChange={(e) => setAwayDirect(e.target.value)}
+                    onClick={(e) => { e.stopPropagation(); (e.target as HTMLInputElement).select(); }}
+                    aria-label={`${getTeamName(match.away_team, lang)} score`}
+                    className={`score-stepper-value score-stepper-input ${awayScore != null ? 'has-value' : ''}`}
+                  />
                   <button
                     type="button"
                     className="score-stepper-btn"
                     onClick={incAway}
-                    disabled={awayScore != null && awayScore >= 9}
+                    disabled={awayScore != null && awayScore >= 30}
                     aria-label="Increase"
                   >
                     +
@@ -526,9 +568,14 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                     ✓ {t('match.saved')}
                   </span>
                 )}
+                {saveStatus === 'locked' && (
+                  <span className="save-indicator error">
+                    🔒 {t('match.locked')}
+                  </span>
+                )}
                 {saveStatus === 'error' && (
                   <span className="save-indicator error">
-                    {t('match.locked')}
+                    {lang === 'he' ? '⚠ שמירה נכשלה — נסה שוב' : '⚠ Save failed — try again'}
                   </span>
                 )}
               </div>
@@ -598,7 +645,7 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                             : 'border-border'
                         }`}
                       >
-                        <span className="text-2xl block mb-0.5" aria-hidden="true">{getFlag(team)}</span>
+                        <div className="flex justify-center mb-1"><TeamFlag team={team} size="md" /></div>
                         <span className="text-[10px] font-medium">{getTeamName(team, lang)}</span>
                       </button>
                     ))}
@@ -614,18 +661,18 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                   {t('match.prediction')}
                 </p>
                 <div className="flex items-center justify-center gap-3 tabular-nums" data-score>
-                  <span className="text-lg" aria-hidden="true">{getFlag(match.home_team)}</span>
+                  <TeamFlag team={match.home_team} size="sm" />
                   <span className="text-2xl font-bold text-primary">{prediction.home}</span>
                   <span className="text-muted-foreground">:</span>
                   <span className="text-2xl font-bold text-primary">{prediction.away}</span>
-                  <span className="text-lg" aria-hidden="true">{getFlag(match.away_team)}</span>
+                  <TeamFlag team={match.away_team} size="sm" />
                 </div>
                 {prediction.joker_used && (
                   <p className="text-xs mt-1">🃏 {t('joker.active')}</p>
                 )}
                 {prediction.advancer_team_id && (
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {t('match.advancer')}: {getFlag(prediction.advancer_team_id)} {getTeamName(prediction.advancer_team_id, lang)}
+                  <p className="text-[10px] text-muted-foreground mt-1 inline-flex items-center gap-1.5 justify-center">
+                    {t('match.advancer')}: <TeamFlag team={prediction.advancer_team_id} size="sm" /> {getTeamName(prediction.advancer_team_id, lang)}
                   </p>
                 )}
               </div>

@@ -5,7 +5,8 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getFlag, getTeamName, getAllTeams } from '@/lib/team-utils';
+import { getTeamName, getAllTeams } from '@/lib/team-utils';
+import TeamFlag from '@/components/TeamFlag';
 
 /* ---------- component ---------- */
 
@@ -173,8 +174,8 @@ export default function TournamentPredictionsPage() {
           <span className="text-xl" aria-hidden="true">{icon}</span>
           <h3 className="font-bold text-sm">{label}</h3>
           {value && (
-            <span className="ms-auto text-xs text-primary font-bold bg-primary/15 border border-primary/30 px-2 py-0.5 rounded-full">
-              {getFlag(value)} {getTeamName(value, lang)}
+            <span className="ms-auto text-xs text-primary font-bold bg-primary/15 border border-primary/30 px-2 py-0.5 rounded-full inline-flex items-center gap-1.5">
+              <TeamFlag team={value} size="sm" /> {getTeamName(value, lang)}
             </span>
           )}
         </div>
@@ -213,8 +214,8 @@ export default function TournamentPredictionsPage() {
                     ✓
                   </span>
                 )}
-                <span className="text-2xl leading-none" aria-hidden="true">{getFlag(team)}</span>
-                <span className="text-[10px] font-semibold leading-tight truncate w-full">
+                <TeamFlag team={team} size="md" />
+                <span className="text-[11px] font-semibold leading-tight truncate w-full">
                   {getTeamName(team, lang)}
                 </span>
               </button>
@@ -260,7 +261,7 @@ export default function TournamentPredictionsPage() {
         >
           <option value="">{lang === 'he' ? 'בחר שחקן' : 'Select player'}</option>
           {playersByTeam.map(([team, pls]) => (
-            <optgroup key={team} label={`${getFlag(team)} ${getTeamName(team, lang)}`}>
+            <optgroup key={team} label={getTeamName(team, lang)}>
               {pls.map((p) => (
                 <option key={p.id} value={p.id}>
                   {playerName(p)}

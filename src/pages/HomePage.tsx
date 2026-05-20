@@ -282,7 +282,8 @@ export default function HomePage() {
             <p className="text-xs text-muted-foreground text-center mb-3">
               {lang === 'he' ? '🔒 הניחושים נסגרים ב-11 ביוני 22:45' : '🔒 Predictions lock June 11 22:45'}
             </p>
-            <div className="flex justify-center gap-3">
+            {/* Explicit dir flips visual order: Hebrew → days on the right, English → days on the left */}
+            <div dir={lang === 'he' ? 'rtl' : 'ltr'} className="flex justify-center gap-3">
               {[
                 { val: countdown.days, label: lang === 'he' ? 'ימים' : 'Days' },
                 { val: countdown.hours, label: lang === 'he' ? 'שעות' : 'Hours' },
@@ -290,7 +291,7 @@ export default function HomePage() {
                 { val: countdown.secs, label: lang === 'he' ? 'שניות' : 'Sec' },
               ].map((item) => (
                 <div key={item.label} className="countdown-box">
-                  <div className="countdown-number">{String(item.val).padStart(2, '0')}</div>
+                  <div className="countdown-number tabular-nums">{String(item.val).padStart(2, '0')}</div>
                   <div className="countdown-label">{item.label}</div>
                 </div>
               ))}
