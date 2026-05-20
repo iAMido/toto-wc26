@@ -73,12 +73,13 @@
 
 ## Chunk 5 — Python Seeding Scripts
 
-- [ ] `sync/requirements.txt` (`requests`, `python-dotenv`, `supabase-py`)
-- [ ] `sync/.env.example`
-- [ ] `sync/seed_matches.py` — fetch all 72 fixtures and upsert
-- [ ] `sync/seed_players.py` — fetch 48 squads, filter forwards/mids, upsert with HE names
-- [ ] Document run order + API-Football endpoints in `SYNC.md`
-- [ ] Commit + push
+- [x] `sync/requirements.txt` (`requests`, `python-dotenv`, `supabase`)
+- [x] `sync/.env.example`
+- [x] `sync/seed_matches.py` — fetches all fixtures via `/fixtures?league=1&season=2026`, maps round→stage, upserts into `matches`
+- [x] `sync/seed_players.py` — fetches 48 squads via `/players/squads`, filters FW+MF, upserts into `tournaments_players`, loads Hebrew names from `he_player_names.json`
+- [x] `sync/he_player_names.json` — starter file with ~20 top-player Hebrew names
+- [ ] Run `seed_matches.py` + `seed_players.py` against live API (requires API-Football key — user action)
+- [x] Commit + push
 
 ## Chunk 6 — Live Sync Edge Function + pg_cron
 
