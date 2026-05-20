@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useAdmin } from '@/hooks/useAdmin';
 import { useJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -12,6 +14,7 @@ export default function ProfilePage() {
   const lang = i18n.language;
   const { user, loading: authLoading } = useRequireAuth();
   const { data: jokerBudget } = useJokerBudget();
+  const { isAdmin } = useAdmin();
   const queryClient = useQueryClient();
 
   // Display-name edit state
@@ -268,6 +271,26 @@ export default function ProfilePage() {
 
         {/* Actions */}
         <div className="space-y-3 pt-2">
+          {/* Admin-only entry — invisible to regular users */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className="block w-full bg-amber-900/20 rounded-2xl border border-amber-700/40 p-4 text-sm text-start hover:bg-amber-900/30 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-amber-300">
+                  ⚙️ {lang === 'he' ? 'פאנל ניהול' : 'Admin panel'}
+                </span>
+                <span className="text-amber-400/70">›</span>
+              </div>
+              <p className="text-[10px] text-amber-200/60 mt-0.5">
+                {lang === 'he'
+                  ? 'תוצאות טורניר, סנכרון, פתרון נוקאאוט'
+                  : 'Tournament results, sync, bracket resolution'}
+              </p>
+            </Link>
+          )}
+
           <button
             onClick={toggleLang}
             className="w-full bg-card rounded-2xl border border-border p-4 text-sm text-start hover:bg-muted/50 transition-colors flex items-center justify-between"

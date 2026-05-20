@@ -286,8 +286,9 @@ export default function HomePage() {
             <p className="text-xs text-muted-foreground text-center mb-3">
               {lang === 'he' ? '🔒 הניחושים נסגרים ב-11 ביוני 22:45' : '🔒 Predictions lock June 11 22:45'}
             </p>
-            {/* Explicit dir flips visual order: Hebrew → days on the right, English → days on the left */}
-            <div dir={lang === 'he' ? 'rtl' : 'ltr'} className="flex justify-center gap-3">
+            {/* Always LTR — clock-style countdown reads days|hours|min|sec
+                from left to right in both languages, per user preference. */}
+            <div dir="ltr" className="flex justify-center gap-3">
               {[
                 { val: countdown.days, label: lang === 'he' ? 'ימים' : 'Days' },
                 { val: countdown.hours, label: lang === 'he' ? 'שעות' : 'Hours' },
