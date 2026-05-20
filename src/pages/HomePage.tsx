@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
+import { getFlag, getTeamName } from '@/lib/team-utils';
 import HowToPlayModal from '@/components/HowToPlayModal';
 
 export default function HomePage() {
@@ -90,6 +91,71 @@ export default function HomePage() {
     staleTime: 60_000,
   });
 
+  // Next unpredicted match
+  const { data: nextMatch } = useQuery({
+    queryKey: ['next-match', user?.id],
+    queryFn: async () => {
+      const now = new Date().toISOString();
+      // Get all upcoming matches
+      const { data: upcoming } = await supabase
+        .from('matches')
+        .select('*')
+        .gt('kickoff_at', now)
+        .eq('status', 'NS')
+        .order('kickoff_at', { ascending: true })
+        .limit(10);
+      if (!upcoming || upcoming.length === 0) return null;
+
+      // Get user's predictions for these
+      const ids = upcoming.map((m) => m.id);
+      const { data: preds } = await supabase
+        .from('predictions')
+        .select('match_id')
+        .eq('user_id', user!.id)
+        .in('match_id', ids);
+
+      const predSet = new Set((preds ?? []).map((p) => p.match_id));
+      // Find first unpredicted
+      return upcoming.find((m) => !predSet.has(m.id)) ?? upcoming[0];
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
+  // Onboarding checklist data
+  const { data: onboarding } = useQuery({
+    queryKey: ['onboarding', user?.id],
+    queryFn: async () => {
+      const [groupsRes, predsRes, tournRes, matchesRes] = await Promise.all([
+        supabase.from('group_members').select('group_id', { count: 'exact', head: true }).eq('user_id', user!.id),
+        supabase.from('predictions').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
+        supabase.from('tournament_predictions').select('champion_team, top_scorer_player_id').eq('user_id', user!.id).maybeSingle(),
+        supabase.from('matches').select('id', { count: 'exact', head: true }),
+      ]);
+
+      const hasGroup = (groupsRes.count ?? 0) > 0;
+      const hasChampion = !!tournRes.data?.champion_team;
+      const hasScorer = !!tournRes.data?.top_scorer_player_id;
+      const totalMatches = matchesRes.count ?? 0;
+      const predictedMatches = predsRes.count ?? 0;
+      const unpredicted = totalMatches - predictedMatches;
+
+      const steps = [
+        { key: 'group', done: hasGroup },
+        { key: 'champion', done: hasChampion },
+        { key: 'scorer', done: hasScorer },
+        { key: 'predictions', done: predictedMatches > 0 },
+      ];
+
+      const completedCount = steps.filter((s) => s.done).length;
+      const pct = Math.round((completedCount / steps.length) * 100);
+
+      return { steps, completedCount, pct, unpredicted, totalMatches, predictedMatches };
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -172,6 +238,38 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Next unpredicted match card */}
+        {nextMatch && (
+          <Link to={`/match/${nextMatch.id}`} className="block">
+            <div className="bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/40 p-4 hover:border-primary/70 transition-all">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('nextMatch.title')}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {new Date(nextMatch.kickoff_at).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {' '}
+                  {new Date(nextMatch.kickoff_at).toLocaleTimeString(lang === 'he' ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-3xl">{getFlag(nextMatch.home_team)}</span>
+                  <span className="text-sm font-bold truncate">{getTeamName(nextMatch.home_team, lang)}</span>
+                </div>
+                <div className="vs-badge mx-3">VS</div>
+                <div className="flex items-center gap-2 flex-1 justify-end">
+                  <span className="text-sm font-bold truncate text-end">{getTeamName(nextMatch.away_team, lang)}</span>
+                  <span className="text-3xl">{getFlag(nextMatch.away_team)}</span>
+                </div>
+              </div>
+              <div className="mt-3 text-center">
+                <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-bold px-4 py-1.5 rounded-full">
+                  ⚡ {t('nextMatch.predictNow')}
+                </span>
+              </div>
+            </div>
+          </Link>
+        )}
+
         {/* Quick stats */}
         {matchStats && (
           <div className="grid grid-cols-3 gap-3">
@@ -195,6 +293,71 @@ export default function HomePage() {
                 {lang === 'he' ? "ג׳וקרים" : 'Jokers'}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Personalized nudge */}
+        {onboarding && onboarding.unpredicted > 0 && (
+          <Link to="/matches" className="block">
+            <div className="bg-amber-900/30 border border-amber-700/30 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-amber-900/40 transition-colors">
+              <span className="text-lg">📢</span>
+              <p className="text-xs text-amber-200 flex-1">
+                {t('nudge.unpredicted', { count: onboarding.unpredicted })}
+              </p>
+              <span className="text-amber-400 text-xs font-bold">›</span>
+            </div>
+          </Link>
+        )}
+
+        {/* Onboarding checklist */}
+        {onboarding && onboarding.pct < 100 && (
+          <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold">{t('onboarding.title')}</h3>
+              <span className="text-[10px] text-primary font-medium">{t('onboarding.progress', { pct: onboarding.pct })}</span>
+            </div>
+            {/* Progress bar */}
+            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-500"
+                style={{ width: `${onboarding.pct}%` }}
+              />
+            </div>
+            {/* Steps */}
+            <div className="space-y-2">
+              {onboarding.steps.map((step) => {
+                const stepConfig: Record<string, { icon: string; label: string; desc: string; href: string }> = {
+                  group: { icon: '👥', label: t('onboarding.stepGroup'), desc: t('onboarding.stepGroupDesc'), href: '/groups' },
+                  champion: { icon: '🏆', label: t('onboarding.stepChampion'), desc: t('onboarding.stepChampionDesc'), href: '/tournament' },
+                  scorer: { icon: '⚽', label: t('onboarding.stepScorer'), desc: t('onboarding.stepScorerDesc'), href: '/tournament' },
+                  predictions: { icon: '🎯', label: t('onboarding.stepPredictions'), desc: t('onboarding.stepPredictionsDesc'), href: '/matches' },
+                };
+                const cfg = stepConfig[step.key];
+                if (!cfg) return null;
+
+                return (
+                  <Link key={step.key} to={cfg.href} className="block">
+                    <div className={`flex items-center gap-3 rounded-xl p-2.5 transition-colors ${step.done ? 'bg-primary/10 opacity-60' : 'bg-muted/30 hover:bg-muted/50'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${step.done ? 'bg-primary/20' : 'bg-muted'}`}>
+                        {step.done ? '✓' : cfg.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-medium ${step.done ? 'line-through text-muted-foreground' : ''}`}>{cfg.label}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{cfg.desc}</p>
+                      </div>
+                      {!step.done && <span className="text-muted-foreground text-xs">›</span>}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* All done message */}
+        {onboarding && onboarding.pct === 100 && (
+          <div className="bg-primary/10 border border-primary/30 rounded-xl px-4 py-3 text-center">
+            <p className="text-sm text-primary font-medium">{t('onboarding.allDone')}</p>
           </div>
         )}
 

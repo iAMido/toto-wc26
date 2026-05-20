@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { path: '/matches', icon: '⚽', labelKey: 'nav.matches' },
   { path: '/groups', icon: '👥', labelKey: 'nav.groups' },
   { path: '/tournament', icon: '🏆', labelKey: 'nav.tournament' },
+  { path: '/profile', icon: '👤', labelKey: 'profile.title' },
 ];
 
 export default function BottomNav() {

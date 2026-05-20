@@ -67,3 +67,5 @@ coverage/
 .cache/
 .parcel-cache/
 *.tsbuildinfo
+
+.vercel

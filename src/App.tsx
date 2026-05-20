@@ -9,6 +9,7 @@ import GroupDetailPage from '@/pages/GroupDetailPage';
 import MatchListPage from '@/pages/MatchListPage';
 import MatchPredictionPage from '@/pages/MatchPredictionPage';
 import TournamentPredictionsPage from '@/pages/TournamentPredictionsPage';
+import ProfilePage from '@/pages/ProfilePage';
 import PlaceholderPage from '@/pages/PlaceholderPage';
 
 const queryClient = new QueryClient({
@@ -35,6 +36,7 @@ function AppRoutes() {
           <Route path="/matches" element={<MatchListPage />} />
           <Route path="/match/:id" element={<MatchPredictionPage />} />
           <Route path="/tournament" element={<TournamentPredictionsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/leaderboard/:groupId" element={<PlaceholderPage title="Leaderboard" />} />
         </Routes>
       </div>

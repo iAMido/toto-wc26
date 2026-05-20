@@ -183,6 +183,31 @@
     "leaguesTitle": "Private Leagues",
     "leaguesDesc": "Create a group, share the invite code with friends, and compete on a private leaderboard."
   },
+  "profile": {
+    "title": "Profile"
+  },
+  "onboarding": {
+    "title": "Getting Started",
+    "progress": "{{pct}}% complete",
+    "stepGroup": "Join a group",
+    "stepGroupDesc": "Create or join a group to compete with friends",
+    "stepChampion": "Pick a champion",
+    "stepChampionDesc": "Choose who you think will win the World Cup",
+    "stepScorer": "Pick top scorer",
+    "stepScorerDesc": "Predict who will be the tournament's top scorer",
+    "stepPredictions": "Predict matches",
+    "stepPredictionsDesc": "Start predicting match results",
+    "allDone": "You're all set! Good luck! 🎉"
+  },
+  "nextMatch": {
+    "title": "Next Match",
+    "predictNow": "Predict Now",
+    "noneLeft": "All upcoming matches predicted!"
+  },
+  "nudge": {
+    "unpredicted_one": "You have {{count}} match waiting for your prediction",
+    "unpredicted_other": "You have {{count}} matches waiting for your predictions"
+  },
   "pointsBreakdown": {
     "title": "Points Breakdown",
     "basePoints": "Base",

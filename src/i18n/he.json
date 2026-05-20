@@ -183,6 +183,31 @@
     "leaguesTitle": "ליגות פרטיות",
     "leaguesDesc": "צור קבוצה, שתף את קוד ההזמנה עם חברים, והתחרו על טבלת דירוג פרטית."
   },
+  "profile": {
+    "title": "פרופיל"
+  },
+  "onboarding": {
+    "title": "בואו נתחיל",
+    "progress": "{{pct}}% הושלם",
+    "stepGroup": "הצטרף לקבוצה",
+    "stepGroupDesc": "צור או הצטרף לקבוצה כדי להתחרות מול חברים",
+    "stepChampion": "בחר אלופה",
+    "stepChampionDesc": "נחש מי תזכה במונדיאל",
+    "stepScorer": "בחר מלך שערים",
+    "stepScorerDesc": "נחש מי יהיה מלך השערים של הטורניר",
+    "stepPredictions": "נחש משחקים",
+    "stepPredictionsDesc": "התחל לנחש תוצאות משחקים",
+    "allDone": "אתה מוכן! בהצלחה! 🎉"
+  },
+  "nextMatch": {
+    "title": "המשחק הבא",
+    "predictNow": "נחש עכשיו",
+    "noneLeft": "ניחשת את כל המשחקים הקרובים!"
+  },
+  "nudge": {
+    "unpredicted_one": "יש לך משחק {{count}} שמחכה לניחוש",
+    "unpredicted_other": "יש לך {{count}} משחקים שמחכים לניחוש"
+  },
   "pointsBreakdown": {
     "title": "פירוט ניקוד",
     "basePoints": "בסיס",
