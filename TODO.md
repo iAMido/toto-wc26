@@ -169,6 +169,19 @@
 - [ ] Manual E2E tests (two-user reveal, scoring, joker cap, i18n, PWA install)
 - [ ] Tick all remaining boxes; final commit + push
 
+## Post-launch Improvements (user feedback)
+
+- [x] Redesigned HomePage — action cards, scoring rules, joker budget pill, gradient background
+- [x] Redesigned LoginPage — card layout, gradient background, success state
+- [x] Stage grouping — MatchListPage now groups by stage (Group A–L, R32–Final) instead of date
+- [x] Phase tabs — Group Stage / Knockout toggle with open-match counters
+- [x] Stage name translations — 18 stages in EN + HE (בית A, שמינית גמר, etc.)
+- [x] Improved Hebrew translations — more natural phrasing across all sections
+- [x] Sporty emerald-green CSS theme with stage header utilities
+- [x] Stage names in MatchPredictionPage and GroupMatchFeed
+- [x] Seeded 64 additional players — 103 total across 31 teams (was 39/15)
+- [x] Deployed to production: https://toto-il.vercel.app
+
 ---
 
 ## Operational prereqs (user must supply before Chunks 3+)
