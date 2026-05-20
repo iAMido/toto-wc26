@@ -4,40 +4,40 @@
     "tagline": "משחק ניחושים למונדיאל 2026"
   },
   "nav": {
-    "home": "בית",
+    "home": "ראשי",
     "groups": "הקבוצות שלי",
     "tournament": "ניחושי טורניר",
-    "leaderboard": "טבלה",
+    "leaderboard": "טבלת דירוג",
     "matches": "משחקים",
-    "signOut": "התנתק",
+    "signOut": "התנתקות",
     "switchLang": "English"
   },
   "auth": {
-    "signIn": "התחבר",
-    "signInWith": "התחבר עם קישור קסם",
+    "signIn": "התחברות",
+    "signInWith": "התחברות עם קישור קסם",
     "email": "כתובת אימייל",
-    "sendLink": "שלח קישור",
-    "linkSent": "בדוק את האימייל שלך!",
+    "sendLink": "שלח לי קישור",
+    "linkSent": "הקישור נשלח! בדוק את תיבת המייל שלך.",
     "signOutSuccess": "התנתקת בהצלחה."
   },
   "groups": {
     "title": "הקבוצות שלי",
     "create": "צור קבוצה",
     "join": "הצטרף לקבוצה",
-    "inviteCode": "קוד הזמנה",
+    "inviteCode": "קוד הצטרפות",
     "groupName": "שם הקבוצה",
-    "members": "חברים",
-    "noGroups": "אתה עדיין לא בקבוצה.",
-    "enterCode": "הזן קוד הזמנה בן 8 תווים",
-    "copied": "קוד ההזמנה הועתק!",
+    "members": "חברי קבוצה",
+    "noGroups": "עדיין לא הצטרפת לאף קבוצה.",
+    "enterCode": "הזן קוד הצטרפות (8 תווים)",
+    "copied": "הקוד הועתק!",
     "shareCode": "העתק קוד",
-    "createSuccess": "הקבוצה נוצרה!",
+    "createSuccess": "הקבוצה נוצרה בהצלחה!",
     "joinSuccess": "הצטרפת לקבוצה!",
-    "invalidCode": "קוד הזמנה לא תקין. בדוק ונסה שוב.",
+    "invalidCode": "קוד לא תקין, בדוק ונסה שוב.",
     "alreadyMember": "אתה כבר חבר בקבוצה הזו.",
-    "leaveGroup": "עזוב קבוצה",
+    "leaveGroup": "עזיבת קבוצה",
     "leaveConfirm": "בטוח שאתה רוצה לעזוב את הקבוצה?",
-    "creator": "יוצר"
+    "creator": "מנהל"
   },
   "match": {
     "prediction": "הניחוש שלך",
@@ -52,40 +52,40 @@
     "status": {
       "open": "פתוח",
       "locked": "נעול",
-      "scored": "נוקד"
+      "scored": "חושב"
     },
     "allMatches": "כל המשחקים",
     "predicted": "נוחש",
     "result": "תוצאה",
     "advancer": "מי עולה?",
-    "advancerHint": "ניחשת תיקו — בחר מי עולה בפנדלים."
+    "advancerHint": "ניחשת תיקו — בחר מי מנצח בפנדלים."
   },
   "joker": {
-    "label": "ג'וקר (×2)",
-    "active": "ג'וקר פעיל!",
-    "remaining_one": "נותר ג'וקר אחד",
-    "remaining_other": "נותרו {{count}} ג'וקרים",
-    "capReached": "כל 3 הג'וקרים נוצלו",
-    "tooltip": "הכפל את הנקודות שלך למשחק הזה. מקסימום 3 לטורניר."
+    "label": "ג׳וקר (×2)",
+    "active": "ג׳וקר פעיל!",
+    "remaining_one": "נותר ג׳וקר {{count}}",
+    "remaining_other": "נותרו {{count}} ג׳וקרים",
+    "capReached": "כל 3 הג׳וקרים נוצלו",
+    "tooltip": "הכפל את הנקודות שלך במשחק הזה. עד 3 ג׳וקרים לכל הטורניר."
   },
   "leaderboard": {
     "title": "טבלת דירוג",
     "rank": "#",
-    "player": "שחקן",
-    "points": "נק'",
-    "jokers": "ג'וקרים",
-    "matches": "נוקדו"
+    "player": "משתתף",
+    "points": "נק׳",
+    "jokers": "ג׳וקרים",
+    "matches": "חושבו"
   },
   "tournament": {
     "title": "ניחושי טורניר",
-    "champion": "אלופה",
+    "champion": "אלופת העולם",
     "runnerUp": "סגנית",
     "selectTeam": "בחר נבחרת",
-    "topScorer": "מלך שערים",
-    "topAssister": "מלך בישולים",
+    "topScorer": "מלך השערים",
+    "topAssister": "מלך הבישולים",
     "freetext": "אחר (שחקן שלא ברשימה)",
     "locked": "ניחושי הטורניר ננעלו.",
-    "saved": "ניחושי הטורניר נשמרו!"
+    "saved": "הניחושים נשמרו!"
   },
   "feed": {
     "upcoming": "משחקים קרובים",
@@ -96,9 +96,9 @@
   },
   "common": {
     "loading": "טוען...",
-    "error": "משהו השתבש.",
+    "error": "אירעה שגיאה.",
     "retry": "נסה שוב",
-    "save": "שמור",
+    "save": "שמירה",
     "cancel": "ביטול",
     "back": "חזרה",
     "noData": "אין נתונים עדיין."
@@ -107,8 +107,50 @@
     "exact": "תוצאה מדויקת",
     "goalDiff": "הפרש שערים",
     "outcome": "כיוון נכון",
-    "wrong": "לא נכון",
+    "wrong": "טעות",
     "advancerBonus": "בונוס מעפילה",
-    "jokerMultiplier": "ג'וקר ×2"
+    "jokerMultiplier": "ג׳וקר ×2"
+  },
+  "stages": {
+    "GROUP_A": "בית A",
+    "GROUP_B": "בית B",
+    "GROUP_C": "בית C",
+    "GROUP_D": "בית D",
+    "GROUP_E": "בית E",
+    "GROUP_F": "בית F",
+    "GROUP_G": "בית G",
+    "GROUP_H": "בית H",
+    "GROUP_I": "בית I",
+    "GROUP_J": "בית J",
+    "GROUP_K": "בית K",
+    "GROUP_L": "בית L",
+    "R32": "שלב ה-32",
+    "R16": "שמינית גמר",
+    "QF": "רבע גמר",
+    "SF": "חצי גמר",
+    "3RD": "משחק על מקום שלישי",
+    "FINAL": "גמר",
+    "groupPhase": "שלב הבתים",
+    "knockoutPhase": "שלב הנוקאאוט"
+  },
+  "home": {
+    "welcome": "שלום",
+    "quickActions": "מה בא לך לעשות?",
+    "predictMatches": "ניחוש משחקים",
+    "predictMatchesDesc": "צפה במשחקים ושלח את הניחושים שלך",
+    "myGroups": "הקבוצות שלי",
+    "myGroupsDesc": "צור קבוצה או הצטרף לקבוצה של חברים",
+    "tournamentPicks": "ניחושי טורניר",
+    "tournamentPicksDesc": "בחר אלופה, סגנית, מלך שערים ומלך בישולים",
+    "howItWorks": "איך זה עובד?",
+    "step1": "נחש את התוצאה המדויקת של כל משחק",
+    "step2": "השתמש ב-3 ג׳וקרים (×2) על הניחושים הכי בטוחים שלך",
+    "step3": "התחרה מול חברים בקבוצות פרטיות",
+    "scoringTitle": "ניקוד",
+    "scoringExact": "תוצאה מדויקת = 5 נק׳",
+    "scoringDiff": "הפרש שערים = 3 נק׳",
+    "scoringOutcome": "כיוון נכון = 1 נק׳",
+    "scoringJoker": "ג׳וקר מכפיל את הנקודות",
+    "scoringAdvancer": "ניחוש מנצחת פנדלים = +2 בונוס"
   }
 }

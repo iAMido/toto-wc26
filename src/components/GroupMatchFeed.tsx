@@ -87,7 +87,7 @@ function FeedMatchCard({
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
               {fmtShortDate(match.kickoff_at, lang)} {fmtTime(match.kickoff_at, lang)}{' '}
-              &middot; {match.stage.replace('_', ' ')}
+              &middot; {t(`stages.${match.stage}`, { defaultValue: match.stage.replace('_', ' ') })}
             </span>
             {match.home_score_120 != null && (
               <span className="text-sm font-mono font-bold">

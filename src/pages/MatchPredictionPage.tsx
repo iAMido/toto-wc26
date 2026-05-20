@@ -172,8 +172,11 @@ export default function MatchPredictionPage() {
 
   /* ---- render ---- */
 
+  const stageLabel = t(`stages.${match.stage}`, { defaultValue: match.stage.replace('_', ' ') });
+
   return (
-    <div className="min-h-screen p-4 max-w-lg mx-auto space-y-6 pb-10">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background">
+    <div className="max-w-lg mx-auto px-4 pb-10 space-y-6">
       {/* Nav */}
       <div className="flex items-center justify-between pt-4">
         <Link to="/matches">
@@ -182,10 +185,14 @@ export default function MatchPredictionPage() {
       </div>
 
       {/* Match info card */}
-      <Card>
+      <Card className="border-primary/20">
         <CardHeader className="text-center">
           <CardDescription>
-            {match.stage.replace('_', ' ')} &middot; {kickoffLabel}
+            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold mb-1 ${match.stage.startsWith('GROUP_') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'}`}>
+              {stageLabel}
+            </span>
+            <br />
+            {kickoffLabel}
           </CardDescription>
           <CardTitle className="text-xl">
             {match.home_team} {t('match.vs')} {match.away_team}
@@ -362,6 +369,7 @@ export default function MatchPredictionPage() {
           )}
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }
