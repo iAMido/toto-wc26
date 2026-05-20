@@ -157,7 +157,10 @@ export default function GroupDetailPage() {
             scoring has happened — gives users a sense of who's in the group. */}
         {leaderboard && leaderboard.length > 0 && (
           <div className="bg-card rounded-2xl border border-border p-3 space-y-3">
-            <h2 className="font-bold text-sm text-center">🏅 {t('leaderboard.title')}</h2>
+            <div className="text-center space-y-0.5">
+              <h2 className="font-bold text-sm">🏅 {t('leaderboard.title')}</h2>
+              <p className="text-[10px] text-muted-foreground">{t('leaderboard.subtitle')}</p>
+            </div>
 
             {/* Sort by total_points DESC (the view already orders, but apply locally for safety) */}
             {(() => {

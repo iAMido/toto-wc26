@@ -71,18 +71,19 @@
     "tooltip": "הכפל את הנקודות שלך במשחק הזה. עד 3 ג׳וקרים לכל הטורניר."
   },
   "leaderboard": {
-    "title": "טבלת דירוג",
+    "title": "טבלת דירוג קבוצתית",
+    "subtitle": "סיכום נקודות כל החברים בקבוצה",
     "rank": "#",
-    "player": "משתתף",
+    "player": "שחקן",
     "points": "נק׳",
     "jokers": "ג׳וקרים",
-    "matches": "חושבו",
-    "matchPoints": "משחקים",
+    "matches": "משחקים שחושבו",
+    "matchPoints": "ניחושים",
     "tournamentPoints": "טורניר",
-    "exactScores": "מדויקות",
-    "totalPoints": "סה״כ",
-    "noResultsYet": "טרם נצברו נקודות. תוצאות יופיעו לאחר המשחקים הראשונים.",
-    "you": "אתה"
+    "exactScores": "מדויקים",
+    "totalPoints": "סה״כ נק׳",
+    "noResultsYet": "טרם נצברו נקודות. הטבלה תתעדכן לאחר המשחקים הראשונים.",
+    "you": "אני"
   },
   "tournament": {
     "title": "ניחושי טורניר",

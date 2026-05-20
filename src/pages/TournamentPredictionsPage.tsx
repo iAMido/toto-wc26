@@ -155,7 +155,7 @@ export default function TournamentPredictionsPage() {
 
   /* ---- team grid selector ---- */
 
-  function TeamGrid({
+  function TeamDropdown({
     value,
     onChange,
     exclude,
@@ -168,59 +168,64 @@ export default function TournamentPredictionsPage() {
     label: string;
     icon: string;
   }) {
+    // 48 teams × 2 selectors = ~30 rows of vertical real estate as a grid;
+    // a native <select> collapses each picker into a single row and uses the
+    // platform's native picker (wheel on iOS, list on Android) — no virtual
+    // keyboard required, much faster to scan than scrolling a grid.
     return (
       <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
         <div className="flex items-center gap-2">
           <span className="text-xl" aria-hidden="true">{icon}</span>
           <h3 className="font-bold text-sm">{label}</h3>
-          {value && (
-            <span className="ms-auto text-xs text-primary font-bold bg-primary/15 border border-primary/30 px-2 py-0.5 rounded-full inline-flex items-center gap-1.5">
-              <TeamFlag team={value} size="sm" /> {getTeamName(value, lang)}
-            </span>
-          )}
         </div>
-        {/* 3-column grid keeps 48dp touch targets on ~390px screens.
-            Teams are pre-sorted alphabetically by current language in `teams`. */}
-        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={label}>
-          {teams.map((team) => {
-            const isExcluded = team === exclude;
-            const selected = value === team;
-            const disabled = isLocked || isExcluded;
-            return (
-              <button
-                key={team}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                aria-label={getTeamName(team, lang)}
-                onClick={() => onChange(team === value ? '' : team)}
-                disabled={disabled}
-                className={`
-                  relative flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl text-center min-h-[72px] transition-all
-                  ${selected
-                    ? 'bg-primary/15 border-2 border-primary shadow-lg shadow-primary/20'
-                    : isExcluded
-                      ? 'bg-muted/20 border border-border/30 opacity-30 grayscale'
-                      : 'bg-muted/30 border border-border/50 hover:bg-muted/60 active:scale-95'}
-                  ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
-                `}
-              >
-                {/* Selected-state checkmark overlay */}
-                {selected && (
-                  <span
-                    className="absolute top-1 end-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[11px] font-black flex items-center justify-center shadow-sm"
-                    aria-hidden="true"
-                  >
-                    ✓
-                  </span>
-                )}
-                <TeamFlag team={team} size="md" />
-                <span className="text-[11px] font-semibold leading-tight truncate w-full">
-                  {getTeamName(team, lang)}
-                </span>
-              </button>
-            );
-          })}
+
+        <div className="flex items-center gap-2.5">
+          {/* Inline flag preview for the selected team — preserves visual
+              identity that a bare <select> would lose. */}
+          <div className="w-11 h-11 rounded-xl bg-muted/40 border border-border/50 flex items-center justify-center shrink-0">
+            {value
+              ? <TeamFlag team={value} size="md" />
+              : <span className="text-muted-foreground/50 text-lg" aria-hidden="true">⚽</span>}
+          </div>
+
+          <div className="relative flex-1">
+            <select
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              disabled={isLocked}
+              aria-label={label}
+              className="w-full h-11 rounded-xl border border-border bg-muted/50 ps-3 pe-9 text-sm font-bold appearance-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <option value="">{t('tournament.selectTeam')}</option>
+              {teams.map((team) => {
+                const isExcluded = team === exclude;
+                return (
+                  <option key={team} value={team} disabled={isExcluded}>
+                    {getTeamName(team, lang)}{isExcluded ? ' —' : ''}
+                  </option>
+                );
+              })}
+            </select>
+            {/* Chevron icon — appearance-none above strips the native arrow */}
+            <span
+              className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+          </div>
+
+          {/* Clear button when a team is selected */}
+          {value && !isLocked && (
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              aria-label={t('common.cancel')}
+              className="w-9 h-9 rounded-lg bg-muted/40 hover:bg-muted/60 text-muted-foreground flex items-center justify-center text-sm shrink-0"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
     );
@@ -312,7 +317,7 @@ export default function TournamentPredictionsPage() {
         )}
 
         {/* Champion */}
-        <TeamGrid
+        <TeamDropdown
           value={champion}
           onChange={setChampion}
           exclude={runnerUp}
@@ -321,7 +326,7 @@ export default function TournamentPredictionsPage() {
         />
 
         {/* Runner-up */}
-        <TeamGrid
+        <TeamDropdown
           value={runnerUp}
           onChange={setRunnerUp}
           exclude={champion}
