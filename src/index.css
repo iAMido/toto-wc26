@@ -71,7 +71,7 @@
     @apply w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-lg shrink-0;
   }
 
-  /* Score input circle */
+  /* Score input circle (legacy — MatchPredictionPage) */
   .score-circle {
     @apply w-12 h-12 rounded-full bg-muted border-2 border-border text-center text-lg font-bold
            focus:border-primary focus:ring-1 focus:ring-primary outline-none
@@ -84,6 +84,28 @@
   }
   .score-circle[type='number'] {
     -moz-appearance: textfield;
+  }
+
+  /* Large score circle — tappable button (InlineMatchCard) */
+  .score-circle-lg {
+    @apply w-14 h-14 rounded-full border-2 border-border
+           text-center text-xl font-black
+           flex items-center justify-center
+           text-foreground transition-all cursor-pointer select-none
+           bg-muted hover:border-primary/50;
+  }
+
+  /* Number pad button */
+  .numpad-btn {
+    @apply h-10 rounded-lg bg-card border border-border text-sm font-bold
+           text-foreground
+           active:bg-primary active:text-primary-foreground
+           transition-colors cursor-pointer select-none;
+  }
+  @media (hover: hover) {
+    .numpad-btn:hover {
+      @apply bg-primary/10 border-primary/50;
+    }
   }
 
   /* Countdown */

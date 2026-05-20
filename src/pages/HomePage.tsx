@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
-import { getFlag, getTeamName } from '@/lib/team-utils';
+import InlineMatchCard from '@/components/InlineMatchCard';
 import HowToPlayModal from '@/components/HowToPlayModal';
 
 export default function HomePage() {
@@ -14,6 +14,7 @@ export default function HomePage() {
   const { user, loading } = useRequireAuth();
   const { data: jokerBudget } = useJokerBudget();
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
 
   // Countdown to tournament start (June 11, 2026)
   const TOURNAMENT_START = new Date('2026-06-11T22:00:00+03:00');
@@ -51,11 +52,68 @@ export default function HomePage() {
     enabled: !!user,
   });
 
+  // Match day: today's matches (or nearest upcoming match day)
+  const { data: matchDay } = useQuery({
+    queryKey: ['match-day', user?.id],
+    queryFn: async () => {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      // Try today's matches first
+      const { data: todayMatches } = await supabase
+        .from('matches')
+        .select('*')
+        .gte('kickoff_at', `${todayStr}T00:00:00`)
+        .lte('kickoff_at', `${todayStr}T23:59:59`)
+        .order('kickoff_at', { ascending: true });
+
+      let dayMatches = todayMatches && todayMatches.length > 0 ? todayMatches : null;
+      let label: 'today' | 'next' = 'today';
+
+      // If no matches today, find the next match day
+      if (!dayMatches) {
+        const { data: upcoming } = await supabase
+          .from('matches')
+          .select('*')
+          .gt('kickoff_at', now.toISOString())
+          .order('kickoff_at', { ascending: true })
+          .limit(20);
+
+        if (upcoming && upcoming.length > 0) {
+          const firstDate = upcoming[0].kickoff_at.split('T')[0];
+          dayMatches = upcoming.filter((m) => m.kickoff_at.startsWith(firstDate));
+          label = 'next';
+        }
+      }
+
+      if (!dayMatches || dayMatches.length === 0) return null;
+
+      // Also fetch predictions for these matches
+      const ids = dayMatches.map((m) => m.id);
+      const { data: preds } = await supabase
+        .from('predictions')
+        .select('match_id, home, away, joker_used, points, advancer_team_id')
+        .eq('user_id', user!.id)
+        .in('match_id', ids);
+
+      const predMap = new Map((preds ?? []).map((p) => [p.match_id, p]));
+
+      // Format the date for display
+      const dateObj = new Date(dayMatches[0].kickoff_at);
+      const dateStr = dateObj.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', {
+        weekday: 'long', day: 'numeric', month: 'long',
+      });
+
+      return { label, dateStr, matches: dayMatches, predMap };
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
   // Fetch user's groups + standings
   const { data: groupStandings } = useQuery({
     queryKey: ['home-standings', user?.id],
     queryFn: async () => {
-      // Get user's groups
       const { data: memberships, error: memErr } = await supabase
         .from('group_members')
         .select('group_id, groups(id, name)')
@@ -63,7 +121,6 @@ export default function HomePage() {
       if (memErr) throw memErr;
       if (!memberships || memberships.length === 0) return [];
 
-      // For each group, get the leaderboard to find user's position
       const results = [];
       for (const m of memberships) {
         const g = m.groups as unknown as { id: string; name: string };
@@ -77,49 +134,12 @@ export default function HomePage() {
         const totalMembers = lb?.length ?? 0;
         const points = lb?.find((r) => r.user_id === user!.id)?.total_points ?? 0;
 
-        results.push({
-          groupId: g.id,
-          groupName: g.name,
-          rank,
-          totalMembers,
-          points,
-        });
+        results.push({ groupId: g.id, groupName: g.name, rank, totalMembers, points });
       }
       return results;
     },
     enabled: !!user,
     staleTime: 60_000,
-  });
-
-  // Next unpredicted match
-  const { data: nextMatch } = useQuery({
-    queryKey: ['next-match', user?.id],
-    queryFn: async () => {
-      const now = new Date().toISOString();
-      // Get all upcoming matches
-      const { data: upcoming } = await supabase
-        .from('matches')
-        .select('*')
-        .gt('kickoff_at', now)
-        .eq('status', 'NS')
-        .order('kickoff_at', { ascending: true })
-        .limit(10);
-      if (!upcoming || upcoming.length === 0) return null;
-
-      // Get user's predictions for these
-      const ids = upcoming.map((m) => m.id);
-      const { data: preds } = await supabase
-        .from('predictions')
-        .select('match_id')
-        .eq('user_id', user!.id)
-        .in('match_id', ids);
-
-      const predSet = new Set((preds ?? []).map((p) => p.match_id));
-      // Find first unpredicted
-      return upcoming.find((m) => !predSet.has(m.id)) ?? upcoming[0];
-    },
-    enabled: !!user,
-    staleTime: 30_000,
   });
 
   // Onboarding checklist data
@@ -238,36 +258,42 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Next unpredicted match card */}
-        {nextMatch && (
-          <Link to={`/match/${nextMatch.id}`} className="block">
-            <div className="bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/40 p-4 hover:border-primary/70 transition-all">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('nextMatch.title')}</span>
-                <span className="text-[10px] text-muted-foreground">
-                  {new Date(nextMatch.kickoff_at).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                  {' '}
-                  {new Date(nextMatch.kickoff_at).toLocaleTimeString(lang === 'he' ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-3xl">{getFlag(nextMatch.home_team)}</span>
-                  <span className="text-sm font-bold truncate">{getTeamName(nextMatch.home_team, lang)}</span>
-                </div>
-                <div className="vs-badge mx-3">VS</div>
-                <div className="flex items-center gap-2 flex-1 justify-end">
-                  <span className="text-sm font-bold truncate text-end">{getTeamName(nextMatch.away_team, lang)}</span>
-                  <span className="text-3xl">{getFlag(nextMatch.away_team)}</span>
-                </div>
-              </div>
-              <div className="mt-3 text-center">
-                <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-bold px-4 py-1.5 rounded-full">
-                  ⚡ {t('nextMatch.predictNow')}
-                </span>
-              </div>
+        {/* ====== MATCH DAY SECTION ====== */}
+        {matchDay && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold">
+                {matchDay.label === 'today' ? t('home.matchDay') : t('home.nextMatchDay')}
+              </h2>
+              <span className="text-[10px] text-muted-foreground">{matchDay.dateStr}</span>
             </div>
-          </Link>
+
+            {/* Inline match cards */}
+            <div className="space-y-2">
+              {matchDay.matches.map((m) => {
+                const pred = matchDay.predMap.get(m.id);
+                return (
+                  <InlineMatchCard
+                    key={m.id}
+                    match={m}
+                    prediction={pred ?? undefined}
+                    userId={user!.id}
+                    expanded={expandedMatchId === m.id}
+                    onToggle={() => setExpandedMatchId(expandedMatchId === m.id ? null : m.id)}
+                  />
+                );
+              })}
+            </div>
+
+            {/* View all matches link */}
+            <Link to="/matches" className="block">
+              <div className="text-center py-2">
+                <span className="text-xs text-primary font-medium hover:underline">
+                  {t('feed.viewAll')} →
+                </span>
+              </div>
+            </Link>
+          </div>
         )}
 
         {/* Quick stats */}
@@ -316,14 +342,12 @@ export default function HomePage() {
               <h3 className="text-sm font-bold">{t('onboarding.title')}</h3>
               <span className="text-[10px] text-primary font-medium">{t('onboarding.progress', { pct: onboarding.pct })}</span>
             </div>
-            {/* Progress bar */}
             <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
               <div
                 className="h-full bg-primary rounded-full transition-all duration-500"
                 style={{ width: `${onboarding.pct}%` }}
               />
             </div>
-            {/* Steps */}
             <div className="space-y-2">
               {onboarding.steps.map((step) => {
                 const stepConfig: Record<string, { icon: string; label: string; desc: string; href: string }> = {
@@ -354,7 +378,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* All done message */}
         {onboarding && onboarding.pct === 100 && (
           <div className="bg-primary/10 border border-primary/30 rounded-xl px-4 py-3 text-center">
             <p className="text-sm text-primary font-medium">{t('onboarding.allDone')}</p>
@@ -430,7 +453,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Group standings snapshot */}
+        {/* Group standings */}
         {groupStandings && groupStandings.length > 0 && (
           <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
             <h3 className="text-sm font-bold text-center">{t('home.yourPosition')}</h3>
@@ -460,7 +483,6 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* How to play modal */}
       <HowToPlayModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </div>
   );

@@ -58,7 +58,9 @@
     "predicted": "Predicted",
     "result": "Result",
     "advancer": "Who advances?",
-    "advancerHint": "You predicted a draw — pick the penalty winner."
+    "advancerHint": "You predicted a draw — pick the penalty winner.",
+    "tapToPredict": "Tap to predict",
+    "numpadHint": "Tap a circle, then a number"
   },
   "joker": {
     "label": "Joker (×2)",
@@ -136,6 +138,8 @@
   "home": {
     "welcome": "Welcome back",
     "quickActions": "Quick Actions",
+    "matchDay": "Today's Matches",
+    "nextMatchDay": "Next Match Day",
     "predictMatches": "Predict Matches",
     "predictMatchesDesc": "View all matches and submit your predictions",
     "myGroups": "My Groups",

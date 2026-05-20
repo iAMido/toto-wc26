@@ -58,7 +58,9 @@
     "predicted": "נוחש",
     "result": "תוצאה",
     "advancer": "מי עולה?",
-    "advancerHint": "ניחשת תיקו — בחר מי מנצח בפנדלים."
+    "advancerHint": "ניחשת תיקו — בחר מי מנצח בפנדלים.",
+    "tapToPredict": "לחץ לניחוש",
+    "numpadHint": "לחיצה על עיגול, ואז על מספר"
   },
   "joker": {
     "label": "ג׳וקר (×2)",
@@ -136,6 +138,8 @@
   "home": {
     "welcome": "שלום",
     "quickActions": "מה בא לך לעשות?",
+    "matchDay": "משחקי היום",
+    "nextMatchDay": "יום המשחקים הבא",
     "predictMatches": "ניחוש משחקים",
     "predictMatchesDesc": "צפה במשחקים ושלח את הניחושים שלך",
     "myGroups": "הקבוצות שלי",
