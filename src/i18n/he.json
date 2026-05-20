@@ -1,0 +1,94 @@
+{
+  "app": {
+    "name": "טוטו מונדיאל 26",
+    "tagline": "משחק ניחושים למונדיאל 2026"
+  },
+  "nav": {
+    "home": "בית",
+    "groups": "הקבוצות שלי",
+    "tournament": "ניחושי טורניר",
+    "leaderboard": "טבלה",
+    "signOut": "התנתק",
+    "switchLang": "English"
+  },
+  "auth": {
+    "signIn": "התחבר",
+    "signInWith": "התחבר עם קישור קסם",
+    "email": "כתובת אימייל",
+    "sendLink": "שלח קישור",
+    "linkSent": "בדוק את האימייל שלך!",
+    "signOutSuccess": "התנתקת בהצלחה."
+  },
+  "groups": {
+    "title": "הקבוצות שלי",
+    "create": "צור קבוצה",
+    "join": "הצטרף לקבוצה",
+    "inviteCode": "קוד הזמנה",
+    "groupName": "שם הקבוצה",
+    "members": "חברים",
+    "noGroups": "אתה עדיין לא בקבוצה.",
+    "enterCode": "הזן קוד הזמנה בן 8 תווים",
+    "copied": "קוד ההזמנה הועתק!"
+  },
+  "match": {
+    "prediction": "הניחוש שלך",
+    "home": "בית",
+    "away": "חוץ",
+    "submit": "שלח ניחוש",
+    "update": "עדכן ניחוש",
+    "locked": "הניחושים ננעלו — המשחק התחיל.",
+    "saved": "הניחוש נשמר!",
+    "vs": "נגד",
+    "kickoff": "שעת התחלה",
+    "status": {
+      "open": "פתוח",
+      "locked": "נעול",
+      "scored": "נוקד"
+    },
+    "advancer": "מי עולה?",
+    "advancerHint": "ניחשת תיקו — בחר מי עולה בפנדלים."
+  },
+  "joker": {
+    "label": "ג'וקר (×2)",
+    "active": "ג'וקר פעיל!",
+    "remaining_one": "נותר ג'וקר אחד",
+    "remaining_other": "נותרו {{count}} ג'וקרים",
+    "capReached": "כל 3 הג'וקרים נוצלו",
+    "tooltip": "הכפל את הנקודות שלך למשחק הזה. מקסימום 3 לטורניר."
+  },
+  "leaderboard": {
+    "title": "טבלת דירוג",
+    "rank": "#",
+    "player": "שחקן",
+    "points": "נק'",
+    "jokers": "ג'וקרים",
+    "matches": "נוקדו"
+  },
+  "tournament": {
+    "title": "ניחושי טורניר",
+    "champion": "אלופה",
+    "runnerUp": "סגנית",
+    "topScorer": "מלך שערים",
+    "topAssister": "מלך בישולים",
+    "freetext": "אחר (שחקן שלא ברשימה)",
+    "locked": "ניחושי הטורניר ננעלו.",
+    "saved": "ניחושי הטורניר נשמרו!"
+  },
+  "common": {
+    "loading": "טוען...",
+    "error": "משהו השתבש.",
+    "retry": "נסה שוב",
+    "save": "שמור",
+    "cancel": "ביטול",
+    "back": "חזרה",
+    "noData": "אין נתונים עדיין."
+  },
+  "scoring": {
+    "exact": "תוצאה מדויקת",
+    "goalDiff": "הפרש שערים",
+    "outcome": "כיוון נכון",
+    "wrong": "לא נכון",
+    "advancerBonus": "בונוס מעפילה",
+    "jokerMultiplier": "ג'וקר ×2"
+  }
+}

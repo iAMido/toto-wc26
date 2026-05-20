@@ -1,0 +1,94 @@
+{
+  "app": {
+    "name": "Toto WC26",
+    "tagline": "World Cup 2026 Prediction Game"
+  },
+  "nav": {
+    "home": "Home",
+    "groups": "My Groups",
+    "tournament": "Tournament Picks",
+    "leaderboard": "Leaderboard",
+    "signOut": "Sign Out",
+    "switchLang": "עברית"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signInWith": "Sign in with magic link",
+    "email": "Email address",
+    "sendLink": "Send Magic Link",
+    "linkSent": "Check your email for the magic link!",
+    "signOutSuccess": "Signed out successfully."
+  },
+  "groups": {
+    "title": "My Groups",
+    "create": "Create Group",
+    "join": "Join Group",
+    "inviteCode": "Invite Code",
+    "groupName": "Group Name",
+    "members": "Members",
+    "noGroups": "You're not in any groups yet.",
+    "enterCode": "Enter 8-character invite code",
+    "copied": "Invite code copied!"
+  },
+  "match": {
+    "prediction": "Your Prediction",
+    "home": "Home",
+    "away": "Away",
+    "submit": "Submit Prediction",
+    "update": "Update Prediction",
+    "locked": "Predictions are locked — match has started.",
+    "saved": "Prediction saved!",
+    "vs": "vs",
+    "kickoff": "Kickoff",
+    "status": {
+      "open": "Open",
+      "locked": "Locked",
+      "scored": "Scored"
+    },
+    "advancer": "Who advances?",
+    "advancerHint": "You predicted a draw — pick the penalty winner."
+  },
+  "joker": {
+    "label": "Joker (×2)",
+    "active": "Joker active!",
+    "remaining_one": "{{count}} Joker remaining",
+    "remaining_other": "{{count}} Jokers remaining",
+    "capReached": "All 3 Jokers used",
+    "tooltip": "Double your points for this match. Max 3 per tournament."
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "rank": "#",
+    "player": "Player",
+    "points": "Pts",
+    "jokers": "Jokers",
+    "matches": "Scored"
+  },
+  "tournament": {
+    "title": "Tournament Predictions",
+    "champion": "Champion",
+    "runnerUp": "Runner-up",
+    "topScorer": "Top Scorer",
+    "topAssister": "Top Assister",
+    "freetext": "Other (unlisted player)",
+    "locked": "Tournament predictions are locked.",
+    "saved": "Tournament picks saved!"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong.",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "noData": "No data yet."
+  },
+  "scoring": {
+    "exact": "Exact score",
+    "goalDiff": "Goal difference",
+    "outcome": "Correct outcome",
+    "wrong": "Wrong",
+    "advancerBonus": "Advancer bonus",
+    "jokerMultiplier": "Joker ×2"
+  }
+}

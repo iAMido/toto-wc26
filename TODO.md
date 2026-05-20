@@ -95,14 +95,20 @@
 
 ## Chunk 7 — Auth + i18n Shell + Joker Budget State
 
-- [ ] `src/lib/supabase.ts` client
-- [ ] `src/i18n/i18n.ts` with `react-i18next`, default `he`
-- [ ] `src/i18n/en.json`, `src/i18n/he.json` (~40 keys to start)
-- [ ] `src/i18n/RtlProvider.tsx` — toggles `<html dir lang>` on language change
-- [ ] Routes: `/login`, `/`, `/groups/:id`, `/match/:id`, `/tournament`, `/leaderboard/:groupId`
-- [ ] `useRequireAuth` hook
-- [ ] `useJokerBudget` hook — React Query query returning `{ used, remaining, jokerMatchIds }`
-- [ ] Commit + push
+- [x] `src/lib/supabase.ts` — creates Supabase client from `VITE_` env vars
+- [x] `src/i18n/i18n.ts` — i18next init with browser detector, fallback `he`, localStorage cache
+- [x] `src/i18n/en.json` (82 keys), `src/i18n/he.json` (82 keys) — full coverage for all pages
+- [x] `src/i18n/RtlProvider.tsx` — syncs `<html dir lang>` on mount + `languageChanged` event
+- [x] Routes: `/login`, `/`, `/groups`, `/groups/:id`, `/match/:id`, `/tournament`, `/leaderboard/:groupId`
+- [x] `src/pages/LoginPage.tsx` — magic-link OTP flow, language toggle
+- [x] `src/pages/HomePage.tsx` — post-auth hub with nav to groups/tournament, sign-out, lang toggle
+- [x] `src/pages/PlaceholderPage.tsx` — stub for unbuilt routes (Chunks 8-11)
+- [x] `src/hooks/useRequireAuth.ts` — session guard, redirects to /login, listens to auth state changes
+- [x] `src/hooks/useJokerBudget.ts` — React Query hook: `{ used, remaining, jokerMatchIds }`, 30s stale time, `useInvalidateJokerBudget` helper
+- [x] `src/App.tsx` wired: QueryClientProvider + RtlProvider + BrowserRouter + all routes
+- [x] `src/main.tsx` imports `i18n/i18n` before render
+- [x] `npm run build` clean (0 errors, 495 KB / 146 KB gz)
+- [x] Commit + push
 
 ## Chunk 8 — Groups & Membership UI
 
