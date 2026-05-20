@@ -2,9 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   1. BASE: Theme tokens, resets, mobile-first globals
+   ============================================================ */
+
 @layer base {
   :root {
-    /* Dark sporty theme — default */
+    /* Dark sporty theme */
     --background: 150 30% 6%;
     --foreground: 140 20% 93%;
     --card: 150 25% 10%;
@@ -25,21 +29,77 @@
     --input: 150 15% 20%;
     --ring: 152 72% 46%;
     --radius: 0.75rem;
-  }
-}
 
-@layer base {
+    /* Semantic status colors */
+    --color-win: 152 72% 46%;   /* green – correct */
+    --color-lose: 0 72% 51%;    /* red – wrong */
+    --color-live: 30 90% 50%;   /* orange – live/warning */
+  }
+
+  /* ---------- Global resets ---------- */
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;   /* kill native tap flash */
   }
+
+  html {
+    /* dvh prevents mobile address-bar jump; fallback for older browsers */
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior: none;                  /* block pull-to-refresh bounce */
+  }
+
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-feature-settings: 'rlig' 1, 'calt' 1, 'tnum' 1;  /* tabular figures */
+    touch-action: pan-y;                        /* block Safari back-swipe */
+    overscroll-behavior: none;
+  }
+
+  /* Kill 300ms tap delay on all interactive elements */
+  button, a, [role="button"], input, select, textarea, label {
+    touch-action: manipulation;
+  }
+
+  /* Minimum 48dp touch targets for interactive elements */
+  button, a, [role="button"], [role="switch"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Tabular (monospace-width) figures for scores, times, counts */
+  .tabular-nums,
+  [data-score],
+  time {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* Stage section headers */
+/* ============================================================
+   2. COMPONENTS: Reusable patterns
+   ============================================================ */
+
 @layer components {
+
+  /* ---------- Bottom Navigation ---------- */
+  .bottom-nav {
+    @apply fixed bottom-0 inset-x-0 bg-card/95 backdrop-blur-md border-t border-border z-50
+           transition-transform duration-200;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .bottom-nav.nav-hidden {
+    transform: translateY(100%);
+  }
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center gap-0.5 py-2 px-3
+           text-muted-foreground transition-colors;
+    min-height: 48px;
+  }
+  .bottom-nav-item.active {
+    @apply text-primary;
+  }
+
+  /* ---------- Stage / Accordion ---------- */
   .stage-header {
     @apply text-xs font-bold uppercase tracking-wider py-2 px-3 rounded-lg mb-2;
   }
@@ -49,29 +109,62 @@
   .stage-knockout {
     @apply bg-amber-950/60 text-amber-400 border border-amber-800/40;
   }
+  .group-accordion {
+    @apply bg-card rounded-xl border border-border overflow-hidden;
+  }
+  .group-accordion-header {
+    @apply flex items-center justify-between p-3 cursor-pointer transition-colors;
+    min-height: 56px;
+  }
+  @media (hover: hover) {
+    .group-accordion-header:hover { @apply bg-muted/50; }
+  }
+  .group-accordion-header:active { @apply bg-muted/70; }
+  .group-accordion-badge {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold;
+  }
 
-  /* Bottom nav */
-  .bottom-nav {
-    @apply fixed bottom-0 inset-x-0 bg-card/95 backdrop-blur-md border-t border-border z-50;
-  }
-  .bottom-nav-item {
-    @apply flex flex-col items-center gap-0.5 py-2 px-3 text-muted-foreground transition-colors;
-  }
-  .bottom-nav-item.active {
-    @apply text-primary;
-  }
-
-  /* Match card VS badge */
+  /* ---------- VS Badge ---------- */
   .vs-badge {
-    @apply text-xs font-black text-primary bg-primary/10 w-8 h-8 rounded-full flex items-center justify-center shrink-0;
+    @apply text-xs font-black text-primary bg-primary/10 w-8 h-8
+           rounded-full flex items-center justify-center shrink-0;
   }
 
-  /* Flag circle */
+  /* ---------- Flag circle ---------- */
   .flag-circle {
     @apply w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-lg shrink-0;
   }
 
-  /* Score input circle (legacy — MatchPredictionPage) */
+  /* ---------- Score Stepper ---------- */
+  .score-stepper {
+    @apply flex items-center gap-1;
+  }
+  .score-stepper-btn {
+    @apply w-11 h-11 rounded-full flex items-center justify-center
+           text-lg font-bold select-none transition-colors
+           bg-muted border border-border text-foreground;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .score-stepper-btn:active {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+  @media (hover: hover) {
+    .score-stepper-btn:hover { @apply bg-primary/20 border-primary/50; }
+  }
+  .score-stepper-btn:disabled {
+    @apply opacity-30 cursor-not-allowed;
+  }
+  .score-stepper-value {
+    @apply w-14 h-14 rounded-full flex items-center justify-center
+           text-2xl font-black select-none transition-all
+           bg-muted border-2 border-border text-foreground;
+  }
+  .score-stepper-value.has-value {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+
+  /* ---------- Score input circle (legacy — MatchPredictionPage) ---------- */
   .score-circle {
     @apply w-12 h-12 rounded-full bg-muted border-2 border-border text-center text-lg font-bold
            focus:border-primary focus:ring-1 focus:ring-primary outline-none
@@ -86,47 +179,110 @@
     -moz-appearance: textfield;
   }
 
-  /* Large score circle — tappable button (InlineMatchCard) */
+  /* ---------- Large score circle (InlineMatchCard tap-target) ---------- */
   .score-circle-lg {
     @apply w-14 h-14 rounded-full border-2 border-border
            text-center text-xl font-black
            flex items-center justify-center
            text-foreground transition-all cursor-pointer select-none
-           bg-muted hover:border-primary/50;
-  }
-
-  /* Number pad button */
-  .numpad-btn {
-    @apply h-10 rounded-lg bg-card border border-border text-sm font-bold
-           text-foreground
-           active:bg-primary active:text-primary-foreground
-           transition-colors cursor-pointer select-none;
+           bg-muted;
+    min-height: 48px;
+    min-width: 48px;
   }
   @media (hover: hover) {
-    .numpad-btn:hover {
-      @apply bg-primary/10 border-primary/50;
-    }
+    .score-circle-lg:hover { @apply border-primary/50; }
   }
 
-  /* Countdown */
+  /* ---------- Number pad button ---------- */
+  .numpad-btn {
+    @apply h-11 rounded-lg bg-card border border-border text-sm font-bold
+           text-foreground transition-colors cursor-pointer select-none;
+    min-height: 44px;
+  }
+  .numpad-btn:active {
+    @apply bg-primary text-primary-foreground;
+  }
+  @media (hover: hover) {
+    .numpad-btn:hover { @apply bg-primary/10 border-primary/50; }
+  }
+
+  /* ---------- Countdown ---------- */
   .countdown-box {
     @apply bg-muted rounded-lg px-3 py-2 text-center min-w-[3.5rem];
   }
   .countdown-number {
-    @apply text-2xl font-bold text-foreground tabular-nums;
+    @apply text-2xl font-bold text-foreground;
+    font-variant-numeric: tabular-nums;
   }
   .countdown-label {
     @apply text-[10px] text-muted-foreground uppercase tracking-wider;
   }
 
-  /* Collapsible group */
-  .group-accordion {
+  /* ---------- Skeleton loader ---------- */
+  .skeleton {
+    @apply bg-muted rounded-lg animate-pulse;
+  }
+  .skeleton-card {
     @apply bg-card rounded-xl border border-border overflow-hidden;
   }
-  .group-accordion-header {
-    @apply flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors;
+  .skeleton-line {
+    @apply h-3 bg-muted rounded animate-pulse;
   }
-  .group-accordion-badge {
-    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold;
+  .skeleton-circle {
+    @apply rounded-full bg-muted animate-pulse;
+  }
+
+  /* ---------- Custom :active states ---------- */
+  .card-pressable {
+    @apply transition-transform duration-100;
+  }
+  .card-pressable:active {
+    transform: scale(0.98);
+  }
+
+  /* ---------- Auto-save indicator ---------- */
+  .save-indicator {
+    @apply text-[10px] font-medium px-2 py-0.5 rounded-full
+           transition-opacity duration-300;
+  }
+  .save-indicator.saving {
+    @apply bg-muted text-muted-foreground;
+  }
+  .save-indicator.saved {
+    @apply bg-primary/10 text-primary;
+  }
+  .save-indicator.error {
+    @apply bg-destructive/10 text-destructive;
+  }
+}
+
+/* ============================================================
+   3. UTILITIES: Edge-case helpers
+   ============================================================ */
+
+@layer utilities {
+  /* Safe area padding for bottom-nav pages */
+  .pb-safe {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Team name truncation */
+  .team-name {
+    @apply text-xs font-bold truncate;
+    max-width: 7rem;
+  }
+
+  /* Sticky date/stage headers */
+  .sticky-header {
+    @apply sticky top-0 z-10 bg-background/95 backdrop-blur-sm;
+  }
+
+  /* No scrollbar (for horizontal scroll containers) */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

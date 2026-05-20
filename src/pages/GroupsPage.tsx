@@ -92,7 +92,7 @@ export default function GroupsPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[100dvh] flex items-center justify-center">
         <div className="text-center space-y-2">
           <span className="text-3xl">👥</span>
           <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
@@ -114,7 +114,7 @@ export default function GroupsPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100dvh]">
       <div className="max-w-lg mx-auto px-4 pb-4 space-y-4">
         {/* Header */}
         <div className="text-center pt-6 pb-2">

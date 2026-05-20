@@ -27,7 +27,7 @@ function AppRoutes() {
 
   return (
     <>
-      <div className={showNav ? 'pb-16' : ''}>
+      <div className={showNav ? 'pb-safe' : ''}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<HomePage />} />

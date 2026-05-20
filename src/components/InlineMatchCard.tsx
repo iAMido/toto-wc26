@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useJokerBudget, useInvalidateJokerBudget } from '@/hooks/useJokerBudget';
@@ -9,6 +9,7 @@ import { getFlag, getTeamName, getCode } from '@/lib/team-utils';
 
 const KNOCKOUT_STAGES = new Set(['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']);
 const FINISHED_STATUSES = new Set(['FT', 'AET', 'PEN']);
+const AUTOSAVE_DELAY = 800; // ms debounce
 
 /* ---------- types ---------- */
 
@@ -50,34 +51,24 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
   const invalidateJoker = useInvalidateJokerBudget();
   const { data: jokerBudget } = useJokerBudget();
   const cardRef = useRef<HTMLDivElement>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ---- form state ---- */
-  const [homeScore, setHomeScore] = useState(prediction ? String(prediction.home) : '');
-  const [awayScore, setAwayScore] = useState(prediction ? String(prediction.away) : '');
+  const [homeScore, setHomeScore] = useState<number | null>(prediction != null ? prediction.home : null);
+  const [awayScore, setAwayScore] = useState<number | null>(prediction != null ? prediction.away : null);
   const [jokerUsed, setJokerUsed] = useState(prediction?.joker_used ?? false);
   const [advancer, setAdvancer] = useState<string | null>(prediction?.advancer_team_id ?? null);
-  const [activeInput, setActiveInput] = useState<'home' | 'away' | null>(null);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // Sync from prediction prop
   useEffect(() => {
     if (prediction) {
-      setHomeScore(String(prediction.home));
-      setAwayScore(String(prediction.away));
+      setHomeScore(prediction.home);
+      setAwayScore(prediction.away);
       setJokerUsed(prediction.joker_used);
       setAdvancer(prediction.advancer_team_id ?? null);
     }
   }, [prediction]);
-
-  // Auto-select home input on expand
-  useEffect(() => {
-    if (expanded && !isLocked) {
-      setActiveInput('home');
-    } else if (!expanded) {
-      setActiveInput(null);
-      setMsg(null);
-    }
-  }, [expanded]);
 
   // Scroll into view on expand
   useEffect(() => {
@@ -86,7 +77,15 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
         cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 50);
     }
+    if (!expanded) {
+      setSaveStatus('idle');
+    }
   }, [expanded]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, []);
 
   /* ---- derived state ---- */
 
@@ -95,23 +94,12 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
   const isLocked = now >= kickoff || FINISHED_STATUSES.has(match.status);
   const isKnockout = KNOCKOUT_STAGES.has(match.stage);
   const isFinished = FINISHED_STATUSES.has(match.status);
-  const hNum = parseInt(homeScore, 10);
-  const aNum = parseInt(awayScore, 10);
-  const isDraw = !isNaN(hNum) && !isNaN(aNum) && hNum === aNum;
+  const isDraw = homeScore != null && awayScore != null && homeScore === awayScore;
   const needsAdvancer = isKnockout && isDraw && !isLocked;
 
   const jokerOnThis = jokerBudget?.jokerMatchIds.has(match.id) ?? false;
   const jokerDisabled = isLocked || (!jokerOnThis && (jokerBudget?.remaining ?? 0) === 0);
 
-  const canSubmit =
-    !isLocked &&
-    homeScore !== '' &&
-    awayScore !== '' &&
-    !isNaN(hNum) &&
-    !isNaN(aNum) &&
-    hNum >= 0 &&
-    aNum >= 0 &&
-    (!needsAdvancer || advancer != null);
 
   // Countdown
   const diffMs = kickoff.getTime() - now.getTime();
@@ -129,7 +117,6 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
   };
   const countdown = getCountdownStr();
 
-  // Date/time formatting
   const dateStr = kickoff.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', {
     weekday: 'short', day: 'numeric', month: 'short',
   });
@@ -137,76 +124,110 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
     hour: '2-digit', minute: '2-digit',
   });
 
-  /* ---- number pad handler ---- */
-
-  const handleNumberTap = (num: number) => {
-    if (isLocked) return;
-    if (activeInput === 'away') {
-      setAwayScore(String(num));
-      setActiveInput(null);
-    } else {
-      // 'home' or null — set home and advance
-      setHomeScore(String(num));
-      setActiveInput('away');
-    }
-  };
-
-  const handleClear = () => {
-    if (activeInput === 'away') {
-      setAwayScore('');
-    } else if (activeInput === 'home') {
-      setHomeScore('');
-    } else {
-      setHomeScore('');
-      setAwayScore('');
-      setActiveInput('home');
-    }
-  };
-
-  /* ---- mutation ---- */
+  /* ---- mutation (auto-save) ---- */
 
   const submit = useMutation({
-    mutationFn: async () => {
-      const h = parseInt(homeScore, 10);
-      const a = parseInt(awayScore, 10);
-      const payload: Record<string, unknown> = {
+    mutationFn: async (payload: { home: number; away: number; joker: boolean; adv: string | null }) => {
+      const p: Record<string, unknown> = {
         user_id: userId,
         match_id: match.id,
-        home: h,
-        away: a,
-        joker_used: jokerUsed,
-        advancer_team_id: isKnockout && h === a ? advancer : null,
+        home: payload.home,
+        away: payload.away,
+        joker_used: payload.joker,
+        advancer_team_id: isKnockout && payload.home === payload.away ? payload.adv : null,
       };
       const { error } = await supabase
         .from('predictions')
-        .upsert(payload, { onConflict: 'user_id,match_id' });
+        .upsert(p, { onConflict: 'user_id,match_id' });
       if (error) throw error;
     },
     onSuccess: () => {
-      setMsg({ ok: true, text: t('match.saved') });
+      setSaveStatus('saved');
       invalidateJoker();
       queryClient.invalidateQueries({ queryKey: ['my-predictions'] });
-      queryClient.invalidateQueries({ queryKey: ['prediction', match.id] });
       queryClient.invalidateQueries({ queryKey: ['match-stats'] });
       queryClient.invalidateQueries({ queryKey: ['onboarding'] });
-      queryClient.invalidateQueries({ queryKey: ['next-match'] });
       queryClient.invalidateQueries({ queryKey: ['match-day'] });
-      // Auto-collapse after a brief pause
-      setTimeout(() => {
-        setMsg(null);
-        onToggle();
-      }, 1200);
+      setTimeout(() => setSaveStatus('idle'), 2000);
     },
     onError: (err: Error) => {
       const locked =
         err.message.includes('row-level security') ||
         err.message.includes('violates') ||
         err.message.includes('new row');
-      setMsg({ ok: false, text: locked ? t('match.locked') : err.message });
+      setSaveStatus('error');
+      if (locked) {
+        // Revert optimistic state
+        if (prediction) {
+          setHomeScore(prediction.home);
+          setAwayScore(prediction.away);
+          setJokerUsed(prediction.joker_used);
+        }
+      }
+      setTimeout(() => setSaveStatus('idle'), 3000);
     },
   });
 
-  /* ---- can this card expand? ---- */
+  /* ---- debounced auto-save trigger ---- */
+
+  const scheduleAutoSave = useCallback(
+    (h: number | null, a: number | null, joker: boolean, adv: string | null) => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (h == null || a == null || h < 0 || a < 0 || isLocked) return;
+
+      const koNeedsAdv = isKnockout && h === a;
+      if (koNeedsAdv && adv == null) return; // wait for advancer pick
+
+      setSaveStatus('saving');
+      saveTimer.current = setTimeout(() => {
+        submit.mutate({ home: h, away: a, joker, adv });
+      }, AUTOSAVE_DELAY);
+    },
+    [isLocked, isKnockout, submit],
+  );
+
+  /* ---- stepper handlers ---- */
+
+  const incHome = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = Math.min(9, (homeScore ?? -1) + 1);
+    setHomeScore(next);
+    scheduleAutoSave(next, awayScore, jokerUsed, advancer);
+  };
+  const decHome = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (homeScore == null || homeScore <= 0) return;
+    const next = homeScore - 1;
+    setHomeScore(next);
+    scheduleAutoSave(next, awayScore, jokerUsed, advancer);
+  };
+  const incAway = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = Math.min(9, (awayScore ?? -1) + 1);
+    setAwayScore(next);
+    scheduleAutoSave(homeScore, next, jokerUsed, advancer);
+  };
+  const decAway = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (awayScore == null || awayScore <= 0) return;
+    const next = awayScore - 1;
+    setAwayScore(next);
+    scheduleAutoSave(homeScore, next, jokerUsed, advancer);
+  };
+
+  const toggleJoker = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = !jokerUsed;
+    setJokerUsed(next);
+    scheduleAutoSave(homeScore, awayScore, next, advancer);
+  };
+
+  const pickAdvancer = (team: string) => {
+    setAdvancer(team);
+    scheduleAutoSave(homeScore, awayScore, jokerUsed, team);
+  };
+
+  /* ---- can expand? ---- */
   const canExpand = !isLocked || !!prediction;
 
   /* ---- render ---- */
@@ -216,19 +237,24 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
       className={`rounded-xl border transition-all overflow-hidden ${
         expanded
           ? 'border-primary/50 bg-card shadow-lg shadow-primary/5'
-          : 'border-border/50 bg-muted/40 hover:bg-muted/60'
+          : 'border-border/50 bg-muted/40'
       }`}
     >
       {/* ====== COLLAPSED HEADER ====== */}
       <div
         onClick={() => canExpand && onToggle()}
-        className={`p-3 ${canExpand ? 'cursor-pointer' : 'cursor-default'}`}
+        className={`p-3 card-pressable ${canExpand ? 'cursor-pointer' : 'cursor-default'}`}
+        role={canExpand ? 'button' : undefined}
+        tabIndex={canExpand ? 0 : undefined}
+        aria-expanded={expanded}
+        aria-label={`${getTeamName(match.home_team, lang)} vs ${getTeamName(match.away_team, lang)}`}
+        onKeyDown={(e) => { if (canExpand && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onToggle(); } }}
       >
         {/* Date + time + countdown */}
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] text-muted-foreground">
+          <time className="text-[11px] text-muted-foreground" dateTime={match.kickoff_at}>
             {dateStr} · {timeStr}
-          </span>
+          </time>
           {!isLocked && countdown && (
             <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
               {countdown}
@@ -248,14 +274,12 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
 
         {/* Teams row */}
         <div className="flex items-center justify-between gap-2">
-          {/* Home team */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-2xl shrink-0">{getFlag(match.home_team)}</span>
-            <span className="text-xs font-bold truncate">{getTeamName(match.home_team, lang)}</span>
+            <span className="text-2xl shrink-0" aria-hidden="true">{getFlag(match.home_team)}</span>
+            <span className="team-name">{getTeamName(match.home_team, lang)}</span>
           </div>
 
-          {/* Score / VS / Prediction */}
-          <div className="flex items-center gap-1.5 shrink-0 mx-1">
+          <div className="flex items-center gap-1.5 shrink-0 mx-1 tabular-nums" data-score>
             {isFinished && match.home_score_120 != null ? (
               <>
                 <span className="text-lg font-black">{match.home_score_120}</span>
@@ -274,23 +298,22 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
             )}
           </div>
 
-          {/* Away team */}
           <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-            <span className="text-xs font-bold truncate text-end">{getTeamName(match.away_team, lang)}</span>
-            <span className="text-2xl shrink-0">{getFlag(match.away_team)}</span>
+            <span className="team-name text-end">{getTeamName(match.away_team, lang)}</span>
+            <span className="text-2xl shrink-0" aria-hidden="true">{getFlag(match.away_team)}</span>
           </div>
         </div>
 
         {/* Points badge (scored) */}
         {isFinished && prediction?.points != null && (
           <div className="text-center mt-1.5">
-            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full tabular-nums">
               +{prediction.points} {t('leaderboard.points')}
             </span>
           </div>
         )}
 
-        {/* "Tap to predict" hint for open, unpredicted matches */}
+        {/* "Tap to predict" hint */}
         {!isLocked && !prediction && !expanded && (
           <p className="text-center text-[10px] text-primary/60 mt-1.5">{t('match.tapToPredict')}</p>
         )}
@@ -302,84 +325,93 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
           {!isLocked ? (
             /* ---------- PREDICTION FORM ---------- */
             <>
-              {/* Team display: flags + codes + Hebrew names */}
-              <div className="flex items-center justify-between px-4">
+              {/* Team display */}
+              <div className="flex items-center justify-between px-2">
                 <div className="text-center flex-1">
-                  <span className="text-4xl block">{getFlag(match.home_team)}</span>
+                  <span className="text-4xl block" aria-hidden="true">{getFlag(match.home_team)}</span>
                   <span className="text-sm font-black block mt-1">{getCode(match.home_team)}</span>
-                  <span className="text-[10px] text-muted-foreground block">{getTeamName(match.home_team, lang)}</span>
+                  <span className="text-[10px] text-muted-foreground block truncate px-1">{getTeamName(match.home_team, lang)}</span>
                 </div>
                 <span className="text-xs font-bold text-muted-foreground/50">vs</span>
                 <div className="text-center flex-1">
-                  <span className="text-4xl block">{getFlag(match.away_team)}</span>
+                  <span className="text-4xl block" aria-hidden="true">{getFlag(match.away_team)}</span>
                   <span className="text-sm font-black block mt-1">{getCode(match.away_team)}</span>
-                  <span className="text-[10px] text-muted-foreground block">{getTeamName(match.away_team, lang)}</span>
+                  <span className="text-[10px] text-muted-foreground block truncate px-1">{getTeamName(match.away_team, lang)}</span>
                 </div>
               </div>
 
-              {/* Score circles (tappable) */}
-              <div className="flex items-center justify-center gap-5">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setActiveInput('home'); }}
-                  className={`score-circle-lg ${
-                    activeInput === 'home' ? 'ring-2 ring-primary ring-offset-2 ring-offset-card' : ''
-                  } ${homeScore !== '' ? 'bg-primary text-primary-foreground border-primary' : ''}`}
-                >
-                  {homeScore !== '' ? homeScore : '-'}
-                </button>
+              {/* Score steppers: − [ N ] + : − [ N ] + */}
+              <div className="flex items-center justify-center gap-3">
+                {/* Home stepper */}
+                <div className="score-stepper" role="group" aria-label={`${getTeamName(match.home_team, lang)} score`}>
+                  <button
+                    type="button"
+                    className="score-stepper-btn"
+                    onClick={decHome}
+                    disabled={homeScore == null || homeScore <= 0}
+                    aria-label="Decrease"
+                  >
+                    −
+                  </button>
+                  <div className={`score-stepper-value ${homeScore != null ? 'has-value' : ''}`}>
+                    {homeScore != null ? homeScore : '–'}
+                  </div>
+                  <button
+                    type="button"
+                    className="score-stepper-btn"
+                    onClick={incHome}
+                    disabled={homeScore != null && homeScore >= 9}
+                    aria-label="Increase"
+                  >
+                    +
+                  </button>
+                </div>
 
                 <span className="text-xl font-bold text-muted-foreground">:</span>
 
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setActiveInput('away'); }}
-                  className={`score-circle-lg ${
-                    activeInput === 'away' ? 'ring-2 ring-primary ring-offset-2 ring-offset-card' : ''
-                  } ${awayScore !== '' ? 'bg-primary text-primary-foreground border-primary' : ''}`}
-                >
-                  {awayScore !== '' ? awayScore : '-'}
-                </button>
-              </div>
-
-              {/* Number pad */}
-              <div className="space-y-1.5 max-w-[280px] mx-auto">
-                <div className="grid grid-cols-5 gap-1.5">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleNumberTap(n); }}
-                      className="numpad-btn"
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {[6, 7, 8, 9, 0].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleNumberTap(n); }}
-                      className="numpad-btn"
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex justify-center">
+                {/* Away stepper */}
+                <div className="score-stepper" role="group" aria-label={`${getTeamName(match.away_team, lang)} score`}>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); handleClear(); }}
-                    className="text-[10px] text-muted-foreground hover:text-foreground transition-colors px-3 py-1"
+                    className="score-stepper-btn"
+                    onClick={decAway}
+                    disabled={awayScore == null || awayScore <= 0}
+                    aria-label="Decrease"
                   >
-                    {lang === 'he' ? 'נקה' : 'Clear'}
+                    −
+                  </button>
+                  <div className={`score-stepper-value ${awayScore != null ? 'has-value' : ''}`}>
+                    {awayScore != null ? awayScore : '–'}
+                  </div>
+                  <button
+                    type="button"
+                    className="score-stepper-btn"
+                    onClick={incAway}
+                    disabled={awayScore != null && awayScore >= 9}
+                    aria-label="Increase"
+                  >
+                    +
                   </button>
                 </div>
-                <p className="text-[10px] text-muted-foreground text-center">
-                  {t('match.numpadHint')}
-                </p>
+              </div>
+
+              {/* Auto-save status indicator */}
+              <div className="text-center h-5">
+                {saveStatus === 'saving' && (
+                  <span className="save-indicator saving">
+                    {lang === 'he' ? 'שומר...' : 'Saving...'}
+                  </span>
+                )}
+                {saveStatus === 'saved' && (
+                  <span className="save-indicator saved">
+                    ✓ {t('match.saved')}
+                  </span>
+                )}
+                {saveStatus === 'error' && (
+                  <span className="save-indicator error">
+                    {t('match.locked')}
+                  </span>
+                )}
               </div>
 
               {/* Joker toggle */}
@@ -402,10 +434,11 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                   type="button"
                   role="switch"
                   aria-checked={jokerUsed}
-                  onClick={() => setJokerUsed((v) => !v)}
+                  aria-label={t('joker.label')}
+                  onClick={toggleJoker}
                   disabled={jokerDisabled && !jokerUsed}
                   className={`
-                    relative inline-flex h-7 w-12 shrink-0 rounded-full transition-colors
+                    relative inline-flex h-8 w-14 shrink-0 rounded-full transition-colors
                     ${jokerUsed ? 'bg-primary' : 'bg-muted-foreground/30'}
                     ${jokerDisabled && !jokerUsed ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
                   `}
@@ -413,15 +446,15 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                 >
                   <span
                     className={`
-                      pointer-events-none block h-5 w-5 rounded-full bg-white shadow mt-1 transition-transform
-                      ${jokerUsed ? 'translate-x-[1.375rem]' : 'translate-x-1'}
+                      pointer-events-none block h-6 w-6 rounded-full bg-white shadow mt-1 transition-transform
+                      ${jokerUsed ? 'translate-x-[1.5rem]' : 'translate-x-1'}
                     `}
                   />
                 </button>
               </div>
 
               {jokerUsed && (
-                <p className="text-sm text-primary font-semibold text-center">
+                <p className="text-sm text-primary font-semibold text-center" role="status">
                   🃏 {t('joker.active')}
                 </p>
               )}
@@ -431,68 +464,42 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                 <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                   <p className="text-xs font-medium text-center">{t('match.advancer')}</p>
                   <p className="text-[10px] text-muted-foreground text-center">{t('match.advancerHint')}</p>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" role="radiogroup" aria-label={t('match.advancer')}>
                     {[match.home_team, match.away_team].map((team) => (
                       <button
                         key={team}
                         type="button"
-                        onClick={() => setAdvancer(team)}
+                        role="radio"
+                        aria-checked={advancer === team}
+                        aria-label={getTeamName(team, lang)}
+                        onClick={() => pickAdvancer(team)}
                         className={`flex-1 p-2.5 rounded-xl border text-center transition-all ${
                           advancer === team
                             ? 'border-primary bg-primary/10 shadow-sm'
-                            : 'border-border hover:bg-muted/50'
+                            : 'border-border'
                         }`}
                       >
-                        <span className="text-2xl block mb-0.5">{getFlag(team)}</span>
+                        <span className="text-2xl block mb-0.5" aria-hidden="true">{getFlag(team)}</span>
                         <span className="text-[10px] font-medium">{getTeamName(team, lang)}</span>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-
-              {/* Feedback message */}
-              {msg && (
-                <div
-                  className={`text-sm p-2.5 rounded-xl text-center font-medium ${
-                    msg.ok ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'
-                  }`}
-                >
-                  {msg.text}
-                </div>
-              )}
-
-              {/* Save button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  submit.mutate();
-                }}
-                disabled={!canSubmit || submit.isPending}
-                className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm
-                  disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
-              >
-                {submit.isPending
-                  ? (lang === 'he' ? 'שומר...' : 'Saving...')
-                  : prediction
-                    ? t('match.update')
-                    : t('match.submit')}
-              </button>
             </>
           ) : prediction ? (
             /* ---------- LOCKED / SCORED: prediction summary ---------- */
             <div className="space-y-3">
-              {/* User's prediction */}
               <div className="text-center">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
                   {t('match.prediction')}
                 </p>
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-lg">{getFlag(match.home_team)}</span>
+                <div className="flex items-center justify-center gap-3 tabular-nums" data-score>
+                  <span className="text-lg" aria-hidden="true">{getFlag(match.home_team)}</span>
                   <span className="text-2xl font-bold text-primary">{prediction.home}</span>
                   <span className="text-muted-foreground">:</span>
                   <span className="text-2xl font-bold text-primary">{prediction.away}</span>
-                  <span className="text-lg">{getFlag(match.away_team)}</span>
+                  <span className="text-lg" aria-hidden="true">{getFlag(match.away_team)}</span>
                 </div>
                 {prediction.joker_used && (
                   <p className="text-xs mt-1">🃏 {t('joker.active')}</p>
@@ -504,7 +511,7 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                 )}
               </div>
 
-              {/* Points breakdown (if scored) */}
+              {/* Points breakdown */}
               {prediction.points != null && match.home_score_120 != null && (() => {
                 const predH = prediction.home;
                 const predA = prediction.away;
@@ -538,30 +545,29 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                     </h4>
                     <div className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5">
                       <span className="text-xs text-muted-foreground">{baseLabel}</span>
-                      <span className={`text-sm font-bold ${baseColor}`}>+{basePoints}</span>
+                      <span className={`text-sm font-bold tabular-nums ${baseColor}`}>+{basePoints}</span>
                     </div>
                     {prediction.joker_used && (
                       <div className="flex items-center justify-between bg-amber-900/20 rounded-lg px-3 py-1.5 border border-amber-700/20">
                         <span className="text-xs text-amber-400">🃏 {t('pointsBreakdown.jokerApplied')}</span>
-                        <span className="text-sm font-bold text-amber-400">= {jokerMultiplied}</span>
+                        <span className="text-sm font-bold text-amber-400 tabular-nums">= {jokerMultiplied}</span>
                       </div>
                     )}
                     {hasAdvancerBonus && (
                       <div className="flex items-center justify-between bg-emerald-900/20 rounded-lg px-3 py-1.5 border border-emerald-700/20">
                         <span className="text-xs text-emerald-400">{t('pointsBreakdown.advancerCorrect')}</span>
-                        <span className="text-sm font-bold text-emerald-400">+2</span>
+                        <span className="text-sm font-bold text-emerald-400 tabular-nums">+2</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between bg-primary/10 rounded-lg px-3 py-2 border border-primary/20">
                       <span className="text-sm font-bold">{t('pointsBreakdown.total')}</span>
-                      <span className="text-xl font-black text-primary">+{total}</span>
+                      <span className="text-xl font-black text-primary tabular-nums">+{total}</span>
                     </div>
                   </div>
                 );
               })()}
             </div>
           ) : (
-            /* ---------- LOCKED, NO PREDICTION ---------- */
             <p className="text-center text-sm text-muted-foreground py-2">
               {t('match.locked')}
             </p>

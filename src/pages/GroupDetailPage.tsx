@@ -95,7 +95,7 @@ export default function GroupDetailPage() {
 
   if (authLoading || groupLoading || membersLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[100dvh] flex items-center justify-center">
         <div className="text-center space-y-2">
           <span className="text-3xl">👥</span>
           <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
@@ -106,7 +106,7 @@ export default function GroupDetailPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen p-6 flex flex-col items-center justify-center gap-4">
+      <div className="min-h-[100dvh] p-6 flex flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">{t('common.error')}</p>
         <Link to="/groups">
           <Button variant="outline">{t('common.back')}</Button>
@@ -118,7 +118,7 @@ export default function GroupDetailPage() {
   const isCreator = group.created_by === user?.id;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100dvh]">
       <div className="max-w-lg mx-auto px-4 pb-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between pt-4">

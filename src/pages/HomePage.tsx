@@ -178,10 +178,29 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-2">
-          <span className="text-3xl">⚽</span>
-          <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
+      <div className="min-h-[100dvh]">
+        <div className="max-w-lg mx-auto px-4 pt-10 space-y-5">
+          <div className="flex flex-col items-center gap-2">
+            <div className="skeleton-circle w-14 h-14" />
+            <div className="skeleton h-7 w-36" />
+            <div className="skeleton h-4 w-48" />
+          </div>
+          <div className="skeleton-card p-4 space-y-3">
+            <div className="skeleton h-3 w-32 mx-auto" />
+            <div className="flex justify-center gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="skeleton w-14 h-16 rounded-lg" />
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="skeleton-card p-3 h-16" />
+            ))}
+          </div>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton-card p-4 h-20" />
+          ))}
         </div>
       </div>
     );
@@ -200,7 +219,7 @@ export default function HomePage() {
   const hasCountdown = countdown.days > 0 || countdown.hours > 0;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100dvh]">
       {/* Top bar */}
       <header className="flex items-center justify-between p-4 max-w-lg mx-auto">
         <button

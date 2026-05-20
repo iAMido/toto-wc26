@@ -149,17 +149,44 @@ export default function MatchListPage() {
 
   if (authLoading || matchesLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-2">
-          <span className="text-3xl">⚽</span>
-          <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
+      <div className="min-h-[100dvh]">
+        <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
+          <div className="skeleton h-8 w-40 mx-auto" />
+          <div className="flex gap-2">
+            <div className="skeleton h-10 flex-1 rounded-xl" />
+            <div className="skeleton h-10 flex-1 rounded-xl" />
+          </div>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton-card p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="skeleton h-4 w-32" />
+                <div className="skeleton h-5 w-8 rounded-full" />
+              </div>
+              {[1, 2, 3].map((j) => (
+                <div key={j} className="bg-muted/40 rounded-xl p-3">
+                  <div className="skeleton-line w-24 mx-auto mb-2" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="skeleton-circle w-8 h-8" />
+                      <div className="skeleton-line w-16" />
+                    </div>
+                    <div className="skeleton-circle w-8 h-8" />
+                    <div className="flex items-center gap-2">
+                      <div className="skeleton-line w-16" />
+                      <div className="skeleton-circle w-8 h-8" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100dvh]">
       <div className="max-w-lg mx-auto px-4 pb-4 space-y-4">
         {/* Header */}
         <div className="text-center pt-6 pb-2">

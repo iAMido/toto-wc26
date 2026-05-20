@@ -16,7 +16,7 @@ export default function PlaceholderPage({ title }: { title: string }) {
   if (loading) return <p className="p-6">{t('common.loading')}</p>;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 p-6">
       <h1 className="text-2xl font-bold">{title}</h1>
       {Object.entries(params).map(([k, v]) => (
         <p key={k} className="text-sm text-muted-foreground">

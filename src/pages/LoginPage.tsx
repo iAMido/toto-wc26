@@ -42,7 +42,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-6 p-6">
       {/* Logo & branding */}
       <div className="text-center space-y-3">
         <span className="text-6xl block">⚽</span>
