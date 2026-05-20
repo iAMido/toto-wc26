@@ -5,8 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useRealtimeMatches } from '@/hooks/useRealtimeMatches';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { getFlag, getTeamName } from '@/lib/team-utils';
 
 /* ---------- constants ---------- */
 
@@ -20,17 +19,15 @@ const GROUP_STAGES = [
 
 const KNOCKOUT_STAGES = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
 
-/** Canonical order for stages. Lower index = earlier stage. */
 const STAGE_ORDER: Record<string, number> = {};
 [...GROUP_STAGES, ...KNOCKOUT_STAGES].forEach((s, i) => {
   STAGE_ORDER[s] = i;
 });
 
 type Phase = 'group' | 'knockout';
+type MatchDisplayStatus = 'open' | 'predicted' | 'locked' | 'scored';
 
 /* ---------- helpers ---------- */
-
-type MatchDisplayStatus = 'open' | 'predicted' | 'locked' | 'scored';
 
 function getStatus(
   kickoff: string,
@@ -44,18 +41,11 @@ function getStatus(
   return 'open';
 }
 
-const STATUS_STYLE: Record<MatchDisplayStatus, string> = {
-  open: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
-  predicted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  locked: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
-  scored: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
-};
-
 function fmtDate(iso: string, lang: string) {
   return new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', {
     weekday: 'short',
-    month: 'short',
     day: 'numeric',
+    month: 'short',
   });
 }
 
@@ -70,6 +60,10 @@ function isGroupStage(stage: string) {
   return stage.startsWith('GROUP_');
 }
 
+function getGroupLetter(stage: string): string {
+  return stage.replace('GROUP_', '');
+}
+
 /* ---------- component ---------- */
 
 export default function MatchListPage() {
@@ -77,8 +71,8 @@ export default function MatchListPage() {
   const lang = i18n.language;
   const { user, loading: authLoading } = useRequireAuth();
   const [phase, setPhase] = useState<Phase>('group');
+  const [openStages, setOpenStages] = useState<Set<string>>(new Set());
 
-  // Real-time match updates → auto-refresh list
   useRealtimeMatches();
 
   const { data: matches, isLoading: matchesLoading } = useQuery({
@@ -107,7 +101,7 @@ export default function MatchListPage() {
     enabled: !!user,
   });
 
-  // Build prediction lookup and group matches by stage within the selected phase.
+  // Auto-open first stage with open matches
   const stageGroups = useMemo(() => {
     if (!matches) return [];
 
@@ -115,175 +109,238 @@ export default function MatchListPage() {
       (predictions ?? []).map((p) => [p.match_id, p]),
     );
 
-    // Filter matches by phase
     const filtered = matches.filter((m) =>
       phase === 'group' ? isGroupStage(m.stage) : !isGroupStage(m.stage),
     );
 
-    // Group by stage
     const stageMap = new Map<
       string,
-      (typeof matches[number] & {
-        _pred?: (typeof predictions extends (infer U)[] | null ? U : never);
-      })[]
+      {
+        matches: (typeof matches[number] & { _pred?: typeof predictions extends (infer U)[] | null ? U : never })[];
+        predicted: number;
+        total: number;
+      }
     >();
 
     for (const m of filtered) {
-      const arr = stageMap.get(m.stage) ?? [];
-      arr.push({ ...m, _pred: predMap.get(m.id) ?? undefined });
-      stageMap.set(m.stage, arr);
+      const entry = stageMap.get(m.stage) ?? { matches: [], predicted: 0, total: 0 };
+      const pred = predMap.get(m.id);
+      entry.matches.push({ ...m, _pred: pred ?? undefined });
+      entry.total++;
+      if (pred) entry.predicted++;
+      stageMap.set(m.stage, entry);
     }
 
-    // Sort stages by canonical order
-    return Array.from(stageMap.entries()).sort(
+    const sorted = Array.from(stageMap.entries()).sort(
       ([a], [b]) => (STAGE_ORDER[a] ?? 99) - (STAGE_ORDER[b] ?? 99),
     );
-  }, [matches, predictions, phase]);
 
-  // Stats for phase tabs
-  const stats = useMemo(() => {
-    if (!matches) return { group: 0, knockout: 0 };
-    const predMap = new Map(
-      (predictions ?? []).map((p) => [p.match_id, p]),
-    );
-    let groupOpen = 0;
-    let koOpen = 0;
-    for (const m of matches) {
-      const s = getStatus(m.kickoff_at, m.status, predMap.get(m.id)?.points, !!predMap.get(m.id));
-      if (s === 'open') {
-        if (isGroupStage(m.stage)) groupOpen++;
-        else koOpen++;
+    // Auto-open first group that has open matches
+    if (openStages.size === 0 && sorted.length > 0) {
+      const firstOpen = sorted.find(([, data]) =>
+        data.matches.some((m) => getStatus(m.kickoff_at, m.status, m._pred?.points, !!m._pred) === 'open')
+      );
+      if (firstOpen) {
+        setTimeout(() => setOpenStages(new Set([firstOpen[0]])), 0);
+      } else {
+        setTimeout(() => setOpenStages(new Set([sorted[0][0]])), 0);
       }
     }
-    return { group: groupOpen, knockout: koOpen };
-  }, [matches, predictions]);
+
+    return sorted;
+  }, [matches, predictions, phase]);
+
+  const toggleStage = (stage: string) => {
+    setOpenStages((prev) => {
+      const next = new Set(prev);
+      if (next.has(stage)) next.delete(stage);
+      else next.add(stage);
+      return next;
+    });
+  };
 
   if (authLoading || matchesLoading) {
-    return <p className="p-6 text-center">{t('common.loading')}</p>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <span className="text-3xl">⚽</span>
+          <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background">
-      <div className="max-w-lg mx-auto px-4 pb-10 space-y-4">
+    <div className="min-h-screen">
+      <div className="max-w-lg mx-auto px-4 pb-4 space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between pt-4">
-          <h1 className="text-2xl font-extrabold tracking-tight">{t('match.allMatches')}</h1>
-          <Link to="/">
-            <Button variant="ghost" size="sm">{t('common.back')}</Button>
-          </Link>
+        <div className="text-center pt-6 pb-2">
+          <h1 className="text-xl font-bold">{t('match.allMatches')}</h1>
         </div>
 
         {/* Phase tabs */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 bg-muted/50 p-1 rounded-xl">
           <button
-            onClick={() => setPhase('group')}
-            className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
+            onClick={() => { setPhase('group'); setOpenStages(new Set()); }}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
               phase === 'group'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {t('stages.groupPhase')}
-            {stats.group > 0 && (
-              <span className={`ms-1.5 inline-flex items-center justify-center w-5 h-5 text-xs rounded-full ${
-                phase === 'group' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'
-              }`}>
-                {stats.group}
-              </span>
-            )}
           </button>
           <button
-            onClick={() => setPhase('knockout')}
-            className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
+            onClick={() => { setPhase('knockout'); setOpenStages(new Set()); }}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
               phase === 'knockout'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {t('stages.knockoutPhase')}
-            {stats.knockout > 0 && (
-              <span className={`ms-1.5 inline-flex items-center justify-center w-5 h-5 text-xs rounded-full ${
-                phase === 'knockout' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'
-              }`}>
-                {stats.knockout}
-              </span>
-            )}
           </button>
         </div>
 
-        {/* Matches by stage */}
-        {(!matches || matches.length === 0) ? (
-          <p className="text-center text-muted-foreground py-8">{t('common.noData')}</p>
-        ) : stageGroups.length === 0 ? (
+        {/* Stage accordions */}
+        {stageGroups.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">{t('common.noData')}</p>
         ) : (
-          stageGroups.map(([stage, items]) => (
-            <div key={stage} className="space-y-2">
-              {/* Stage header */}
-              <div className={`stage-header ${isGroupStage(stage) ? 'stage-group' : 'stage-knockout'}`}>
-                {t(`stages.${stage}`, { defaultValue: stage.replace('_', ' ') })}
-              </div>
+          <div className="space-y-3">
+            {stageGroups.map(([stage, data]) => {
+              const isOpen = openStages.has(stage);
+              const isGroup = isGroupStage(stage);
+              const letter = isGroup ? getGroupLetter(stage) : '';
+              const progress = `${data.predicted} / ${data.total}`;
+              const allDone = data.predicted === data.total;
 
-              {items.map((m) => {
-                const status = getStatus(m.kickoff_at, m.status, m._pred?.points, !!m._pred);
-                return (
-                  <Link key={m.id} to={`/match/${m.id}`} className="block">
-                    <Card className="hover:border-primary/30 hover:shadow-sm transition-all">
-                      <CardContent className="p-3">
-                        {/* Top row: date · time · status badge */}
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs text-muted-foreground">
-                            {fmtDate(m.kickoff_at, lang)} · {fmtTime(m.kickoff_at, lang)}
-                          </span>
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[status]}`}
-                          >
-                            {t(
-                              status === 'predicted'
-                                ? 'match.predicted'
-                                : `match.status.${status}`,
-                            )}
-                          </span>
-                        </div>
+              return (
+                <div key={stage} className="group-accordion">
+                  {/* Accordion header */}
+                  <button
+                    onClick={() => toggleStage(stage)}
+                    className="group-accordion-header w-full"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`text-lg transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`}>
+                        ▾
+                      </span>
+                      <div className="text-start">
+                        <p className="font-bold text-sm">
+                          {t(`stages.${stage}`, { defaultValue: stage.replace('_', ' ') })}
+                        </p>
+                        <p className={`text-xs ${allDone ? 'text-primary' : 'text-muted-foreground'}`}>
+                          {progress} {lang === 'he' ? 'ניחושים' : 'predicted'}
+                        </p>
+                      </div>
+                    </div>
 
-                        {/* Teams row */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 text-sm">
-                            <span className="font-semibold">{m.home_team}</span>
-                            <span className="text-muted-foreground mx-2 text-xs">{t('match.vs')}</span>
-                            <span className="font-semibold">{m.away_team}</span>
-                          </div>
+                    {isGroup ? (
+                      <span className="group-accordion-badge bg-emerald-900/60 text-emerald-400 border border-emerald-700/50">
+                        {letter}
+                      </span>
+                    ) : (
+                      <span className="group-accordion-badge bg-amber-900/60 text-amber-400 border border-amber-700/50">
+                        {stage === 'FINAL' ? '🏆' : stage === '3RD' ? '🥉' : '⚡'}
+                      </span>
+                    )}
+                  </button>
 
-                          {/* User's prediction */}
-                          {m._pred && (
-                            <span className="text-sm font-mono font-bold ms-2 bg-muted px-2 py-0.5 rounded">
-                              {m._pred.home}–{m._pred.away}
-                              {m._pred.joker_used && ' 🃏'}
-                            </span>
-                          )}
-                        </div>
+                  {/* Accordion content */}
+                  {isOpen && (
+                    <div className="px-3 pb-3 space-y-2">
+                      {data.matches.map((m) => {
+                        const status = getStatus(m.kickoff_at, m.status, m._pred?.points, !!m._pred);
+                        return (
+                          <Link key={m.id} to={`/match/${m.id}`} className="block">
+                            <div className="bg-muted/40 rounded-xl p-3 hover:bg-muted/70 transition-colors border border-border/50">
+                              {/* Date + time */}
+                              <div className="text-center mb-2">
+                                <span className="text-xs text-muted-foreground">
+                                  {fmtDate(m.kickoff_at, lang)} · {fmtTime(m.kickoff_at, lang)}
+                                </span>
+                              </div>
 
-                        {/* Actual result + points */}
-                        {status === 'scored' && m.home_score_120 != null && (
-                          <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t text-xs">
-                            <span className="font-mono text-muted-foreground">
-                              {t('match.result')}: {m.home_score_120}–{m.away_score_120}
-                              {m.status !== 'FT' && ` (${m.status})`}
-                            </span>
-                            {m._pred?.points != null && (
-                              <span className="font-bold text-primary">
-                                +{m._pred.points} {t('leaderboard.points')}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
-          ))
+                              {/* Teams row with flags */}
+                              <div className="flex items-center justify-between gap-2">
+                                {/* Home team */}
+                                <div className="flex-1 text-center">
+                                  <span className="text-2xl block mb-1">{getFlag(m.home_team)}</span>
+                                  <span className="text-xs font-medium block truncate">
+                                    {getTeamName(m.home_team, lang)}
+                                  </span>
+                                </div>
+
+                                {/* Score / VS / Prediction */}
+                                <div className="flex flex-col items-center gap-1">
+                                  {status === 'scored' && m.home_score_120 != null ? (
+                                    <>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xl font-bold">{m.home_score_120}</span>
+                                        <span className="text-xs text-muted-foreground">:</span>
+                                        <span className="text-xl font-bold">{m.away_score_120}</span>
+                                      </div>
+                                      {m.status !== 'FT' && (
+                                        <span className="text-[10px] text-amber-400 font-medium">{m.status}</span>
+                                      )}
+                                      {m._pred?.points != null && (
+                                        <span className="text-xs font-bold text-primary">+{m._pred.points}</span>
+                                      )}
+                                    </>
+                                  ) : m._pred ? (
+                                    <>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-lg font-bold text-primary">{m._pred.home}</span>
+                                        <span className="text-xs text-muted-foreground">:</span>
+                                        <span className="text-lg font-bold text-primary">{m._pred.away}</span>
+                                      </div>
+                                      {m._pred.joker_used && (
+                                        <span className="text-xs">🃏</span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground/30" />
+                                      <span className="text-xs text-muted-foreground">:</span>
+                                      <span className="w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground/30" />
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Away team */}
+                                <div className="flex-1 text-center">
+                                  <span className="text-2xl block mb-1">{getFlag(m.away_team)}</span>
+                                  <span className="text-xs font-medium block truncate">
+                                    {getTeamName(m.away_team, lang)}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Status indicator */}
+                              {status === 'open' && (
+                                <div className="text-center mt-2">
+                                  <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
+                                    {t('match.status.open')}
+                                  </span>
+                                </div>
+                              )}
+                              {status === 'locked' && !m._pred && (
+                                <div className="text-center mt-2">
+                                  <span className="text-[10px] text-yellow-400 font-medium bg-yellow-400/10 px-2 py-0.5 rounded-full">
+                                    {t('match.status.locked')}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

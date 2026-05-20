@@ -4,49 +4,27 @@
 
 @layer base {
   :root {
-    /* Sporty emerald-green theme */
-    --background: 140 20% 98%;
-    --foreground: 160 30% 8%;
-    --card: 0 0% 100%;
-    --card-foreground: 160 30% 8%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 160 30% 8%;
-    --primary: 152 60% 36%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 148 30% 93%;
-    --secondary-foreground: 152 60% 28%;
-    --muted: 140 15% 93%;
-    --muted-foreground: 160 10% 44%;
-    --accent: 45 93% 47%;
-    --accent-foreground: 45 93% 12%;
-    --destructive: 0 84.2% 60.2%;
+    /* Dark sporty theme — default */
+    --background: 150 30% 6%;
+    --foreground: 140 20% 93%;
+    --card: 150 25% 10%;
+    --card-foreground: 140 20% 93%;
+    --popover: 150 25% 10%;
+    --popover-foreground: 140 20% 93%;
+    --primary: 152 72% 46%;
+    --primary-foreground: 150 30% 4%;
+    --secondary: 150 20% 15%;
+    --secondary-foreground: 140 20% 88%;
+    --muted: 150 18% 14%;
+    --muted-foreground: 140 10% 55%;
+    --accent: 45 90% 50%;
+    --accent-foreground: 45 90% 10%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 148 18% 88%;
-    --input: 148 18% 85%;
-    --ring: 152 60% 36%;
+    --border: 150 15% 18%;
+    --input: 150 15% 20%;
+    --ring: 152 72% 46%;
     --radius: 0.75rem;
-  }
-
-  .dark {
-    --background: 160 30% 6%;
-    --foreground: 140 20% 96%;
-    --card: 160 25% 9%;
-    --card-foreground: 140 20% 96%;
-    --popover: 160 25% 9%;
-    --popover-foreground: 140 20% 96%;
-    --primary: 152 55% 48%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 160 20% 15%;
-    --secondary-foreground: 140 20% 90%;
-    --muted: 160 20% 15%;
-    --muted-foreground: 140 10% 60%;
-    --accent: 45 80% 50%;
-    --accent-foreground: 45 80% 10%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 160 15% 18%;
-    --input: 160 15% 18%;
-    --ring: 152 55% 48%;
   }
 }
 
@@ -66,9 +44,67 @@
     @apply text-xs font-bold uppercase tracking-wider py-2 px-3 rounded-lg mb-2;
   }
   .stage-group {
-    @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300;
+    @apply bg-emerald-950/60 text-emerald-400 border border-emerald-800/40;
   }
   .stage-knockout {
-    @apply bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300;
+    @apply bg-amber-950/60 text-amber-400 border border-amber-800/40;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    @apply fixed bottom-0 inset-x-0 bg-card/95 backdrop-blur-md border-t border-border z-50;
+  }
+  .bottom-nav-item {
+    @apply flex flex-col items-center gap-0.5 py-2 px-3 text-muted-foreground transition-colors;
+  }
+  .bottom-nav-item.active {
+    @apply text-primary;
+  }
+
+  /* Match card VS badge */
+  .vs-badge {
+    @apply text-xs font-black text-primary bg-primary/10 w-8 h-8 rounded-full flex items-center justify-center shrink-0;
+  }
+
+  /* Flag circle */
+  .flag-circle {
+    @apply w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-lg shrink-0;
+  }
+
+  /* Score input circle */
+  .score-circle {
+    @apply w-12 h-12 rounded-full bg-muted border-2 border-border text-center text-lg font-bold
+           focus:border-primary focus:ring-1 focus:ring-primary outline-none
+           text-foreground appearance-none;
+  }
+  .score-circle::-webkit-inner-spin-button,
+  .score-circle::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .score-circle[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  /* Countdown */
+  .countdown-box {
+    @apply bg-muted rounded-lg px-3 py-2 text-center min-w-[3.5rem];
+  }
+  .countdown-number {
+    @apply text-2xl font-bold text-foreground tabular-nums;
+  }
+  .countdown-label {
+    @apply text-[10px] text-muted-foreground uppercase tracking-wider;
+  }
+
+  /* Collapsible group */
+  .group-accordion {
+    @apply bg-card rounded-xl border border-border overflow-hidden;
+  }
+  .group-accordion-header {
+    @apply flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors;
+  }
+  .group-accordion-badge {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold;
   }
 }

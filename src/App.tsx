@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RtlProvider } from '@/i18n/RtlProvider';
+import BottomNav from '@/components/BottomNav';
 import LoginPage from '@/pages/LoginPage';
 import HomePage from '@/pages/HomePage';
 import GroupsPage from '@/pages/GroupsPage';
@@ -19,21 +20,35 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppRoutes() {
+  const location = useLocation();
+  const showNav = location.pathname !== '/login';
+
+  return (
+    <>
+      <div className={showNav ? 'pb-16' : ''}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/groups" element={<GroupsPage />} />
+          <Route path="/groups/:id" element={<GroupDetailPage />} />
+          <Route path="/matches" element={<MatchListPage />} />
+          <Route path="/match/:id" element={<MatchPredictionPage />} />
+          <Route path="/tournament" element={<TournamentPredictionsPage />} />
+          <Route path="/leaderboard/:groupId" element={<PlaceholderPage title="Leaderboard" />} />
+        </Routes>
+      </div>
+      {showNav && <BottomNav />}
+    </>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <RtlProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<HomePage />} />
-            <Route path="/groups" element={<GroupsPage />} />
-            <Route path="/groups/:id" element={<GroupDetailPage />} />
-            <Route path="/matches" element={<MatchListPage />} />
-            <Route path="/match/:id" element={<MatchPredictionPage />} />
-            <Route path="/tournament" element={<TournamentPredictionsPage />} />
-            <Route path="/leaderboard/:groupId" element={<PlaceholderPage title="Leaderboard" />} />
-          </Routes>
+          <AppRoutes />
         </BrowserRouter>
       </RtlProvider>
     </QueryClientProvider>

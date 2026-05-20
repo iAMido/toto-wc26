@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { getFlag, getTeamName } from '@/lib/team-utils';
 
 /* ---------- helpers ---------- */
 
@@ -50,7 +50,6 @@ interface MemberPrediction {
 
 /* ---------- sub-components ---------- */
 
-/** Single match card with group members' predictions. */
 function FeedMatchCard({
   match,
   groupId,
@@ -81,72 +80,71 @@ function FeedMatchCard({
 
   return (
     <Link to={`/match/${match.id}`} className="block">
-      <Card className="hover:bg-accent/50 transition-colors">
-        <CardContent className="p-3 space-y-2">
-          {/* Match header */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              {fmtShortDate(match.kickoff_at, lang)} {fmtTime(match.kickoff_at, lang)}{' '}
-              &middot; {t(`stages.${match.stage}`, { defaultValue: match.stage.replace('_', ' ') })}
+      <div className="bg-muted/30 rounded-xl border border-border/50 p-3 space-y-2 hover:bg-muted/50 transition-colors">
+        {/* Match header */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {fmtShortDate(match.kickoff_at, lang)} {fmtTime(match.kickoff_at, lang)}
+            {' · '}
+            {t(`stages.${match.stage}`, { defaultValue: match.stage.replace('_', ' ') })}
+          </span>
+          {match.home_score_120 != null && (
+            <span className="text-sm font-mono font-bold">
+              {match.home_score_120}–{match.away_score_120}
+              {match.status !== 'FT' && ` (${match.status})`}
             </span>
-            {match.home_score_120 != null && (
-              <span className="text-sm font-mono font-bold">
-                {match.home_score_120}–{match.away_score_120}
-                {match.status !== 'FT' && ` (${match.status})`}
-              </span>
-            )}
-          </div>
-
-          <p className="text-sm font-medium">
-            {match.home_team} {t('match.vs')} {match.away_team}
-          </p>
-
-          {/* Members' predictions */}
-          {preds && preds.length > 0 && (
-            <div className="space-y-1 pt-1 border-t">
-              {preds.map((p) => (
-                <div
-                  key={p.user_id}
-                  className={`flex items-center text-xs gap-2 ${
-                    p.user_id === userId ? 'font-semibold' : ''
-                  }`}
-                >
-                  {/* Avatar */}
-                  <span className="w-5 h-5 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold shrink-0">
-                    {(p.display_name ?? '?')[0].toUpperCase()}
-                  </span>
-
-                  {/* Name */}
-                  <span className="truncate flex-1">
-                    {p.display_name || p.user_id.slice(0, 8)}
-                  </span>
-
-                  {/* Prediction / status */}
-                  {p.has_predicted ? (
-                    isRevealed || p.user_id === userId ? (
-                      <span className="font-mono whitespace-nowrap">
-                        {p.home}–{p.away}
-                        {p.joker_used && ' 🃏'}
-                        {p.points != null && (
-                          <span className="text-primary ms-1 font-bold">+{p.points}</span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-green-600 dark:text-green-400">
-                        {t('feed.submitted')} ✓
-                      </span>
-                    )
-                  ) : (
-                    <span className="text-muted-foreground italic">
-                      {t('feed.pending')}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Teams */}
+        <div className="flex items-center justify-center gap-3 text-sm">
+          <span>{getFlag(match.home_team)}</span>
+          <span className="font-medium">{getTeamName(match.home_team, lang)}</span>
+          <span className="text-xs text-muted-foreground">vs</span>
+          <span className="font-medium">{getTeamName(match.away_team, lang)}</span>
+          <span>{getFlag(match.away_team)}</span>
+        </div>
+
+        {/* Members' predictions */}
+        {preds && preds.length > 0 && (
+          <div className="space-y-1 pt-2 border-t border-border/50">
+            {preds.map((p) => (
+              <div
+                key={p.user_id}
+                className={`flex items-center text-xs gap-2 ${
+                  p.user_id === userId ? 'font-semibold' : ''
+                }`}
+              >
+                <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold shrink-0 text-primary">
+                  {(p.display_name ?? '?')[0].toUpperCase()}
+                </span>
+                <span className="truncate flex-1">
+                  {p.display_name || p.user_id.slice(0, 8)}
+                </span>
+                {p.has_predicted ? (
+                  isRevealed || p.user_id === userId ? (
+                    <span className="font-mono whitespace-nowrap">
+                      {p.home}–{p.away}
+                      {p.joker_used && ' 🃏'}
+                      {p.points != null && (
+                        <span className="text-primary ms-1 font-bold">+{p.points}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-primary text-[10px]">
+                      {t('feed.submitted')} ✓
+                    </span>
+                  )
+                ) : (
+                  <span className="text-muted-foreground italic text-[10px]">
+                    {t('feed.pending')}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </Link>
   );
 }
@@ -162,7 +160,6 @@ export default function GroupMatchFeed({ groupId, userId }: GroupMatchFeedProps)
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
 
-  // Fetch all matches (shared with MatchListPage via React Query cache)
   const { data: allMatches } = useQuery({
     queryKey: ['matches'],
     queryFn: async () => {
@@ -175,7 +172,6 @@ export default function GroupMatchFeed({ groupId, userId }: GroupMatchFeedProps)
     },
   });
 
-  // Split into upcoming (next 5) and recent (last 5 finished)
   const { upcoming, recent } = useMemo(() => {
     if (!allMatches) return { upcoming: [], recent: [] };
 
@@ -193,18 +189,17 @@ export default function GroupMatchFeed({ groupId, userId }: GroupMatchFeedProps)
 
     return {
       upcoming: up.slice(0, 5),
-      recent: rec.slice(-5).reverse(), // most recent first
+      recent: rec.slice(-5).reverse(),
     };
   }, [allMatches]);
 
   if (!allMatches || allMatches.length === 0) return null;
 
   return (
-    <div className="space-y-6">
-      {/* Upcoming */}
+    <div className="space-y-4">
       {upcoming.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground">
+        <div className="space-y-2">
+          <h2 className="text-sm font-bold text-muted-foreground px-1">
             {t('feed.upcoming')}
           </h2>
           {upcoming.map((m) => (
@@ -219,10 +214,9 @@ export default function GroupMatchFeed({ groupId, userId }: GroupMatchFeedProps)
         </div>
       )}
 
-      {/* Recent results */}
       {recent.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground">
+        <div className="space-y-2">
+          <h2 className="text-sm font-bold text-muted-foreground px-1">
             {t('feed.recent')}
           </h2>
           {recent.map((m) => (
@@ -237,10 +231,9 @@ export default function GroupMatchFeed({ groupId, userId }: GroupMatchFeedProps)
         </div>
       )}
 
-      {/* View all link */}
       <div className="text-center">
         <Link to="/matches">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="rounded-xl">
             {t('feed.viewAll')}
           </Button>
         </Link>

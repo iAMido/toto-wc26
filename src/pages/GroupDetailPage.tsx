@@ -6,7 +6,6 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useRealtimeMatches } from '@/hooks/useRealtimeMatches';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import GroupMatchFeed from '@/components/GroupMatchFeed';
 
 export default function GroupDetailPage() {
@@ -17,10 +16,8 @@ export default function GroupDetailPage() {
   const queryClient = useQueryClient();
   const [codeCopied, setCodeCopied] = useState(false);
 
-  // Subscribe to real-time match updates → auto-invalidate leaderboard + feed
   useRealtimeMatches();
 
-  // Fetch group info
   const { data: group, isLoading: groupLoading } = useQuery({
     queryKey: ['group', id],
     queryFn: async () => {
@@ -35,7 +32,6 @@ export default function GroupDetailPage() {
     enabled: !!id && !!user,
   });
 
-  // Fetch members with display names
   const { data: members, isLoading: membersLoading } = useQuery({
     queryKey: ['group-members', id],
     queryFn: async () => {
@@ -50,7 +46,6 @@ export default function GroupDetailPage() {
     enabled: !!id && !!user,
   });
 
-  // Fetch leaderboard from the view (only populated after matches are scored)
   const { data: leaderboard } = useQuery({
     queryKey: ['leaderboard', id],
     queryFn: async () => {
@@ -65,7 +60,6 @@ export default function GroupDetailPage() {
     enabled: !!id && !!user,
   });
 
-  // Leave group (delete own membership row)
   const leaveGroup = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
@@ -86,7 +80,6 @@ export default function GroupDetailPage() {
     try {
       await navigator.clipboard.writeText(group.invite_code);
     } catch {
-      // Fallback for environments without clipboard API
       const ta = document.createElement('textarea');
       ta.value = group.invite_code;
       ta.style.position = 'fixed';
@@ -101,7 +94,14 @@ export default function GroupDetailPage() {
   };
 
   if (authLoading || groupLoading || membersLoading) {
-    return <p className="p-6 text-center">{t('common.loading')}</p>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <span className="text-3xl">👥</span>
+          <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
+        </div>
+      </div>
+    );
   }
 
   if (!group) {
@@ -118,84 +118,81 @@ export default function GroupDetailPage() {
   const isCreator = group.created_by === user?.id;
 
   return (
-    <div className="min-h-screen p-4 max-w-lg mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between pt-4">
-        <h1 className="text-2xl font-bold">{group.name}</h1>
-        <Link to="/groups">
-          <Button variant="ghost" size="sm">
-            {t('common.back')}
-          </Button>
-        </Link>
-      </div>
+    <div className="min-h-screen">
+      <div className="max-w-lg mx-auto px-4 pb-4 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between pt-4">
+          <Link to="/groups" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← {t('common.back')}
+          </Link>
+        </div>
 
-      {/* Invite Code */}
-      <Card>
-        <CardContent className="p-4">
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl mx-auto mb-2">
+            {group.name[0]?.toUpperCase() ?? '?'}
+          </div>
+          <h1 className="text-xl font-bold">{group.name}</h1>
+        </div>
+
+        {/* Invite Code */}
+        <div className="bg-card rounded-2xl border border-border p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">{t('groups.inviteCode')}</p>
-              <p className="text-2xl font-mono font-bold tracking-widest">
+              <p className="text-xs text-muted-foreground">{t('groups.inviteCode')}</p>
+              <p className="text-2xl font-mono font-bold tracking-widest text-primary">
                 {group.invite_code}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={copyInviteCode}>
+            <Button variant="outline" size="sm" onClick={copyInviteCode} className="rounded-xl">
               {codeCopied ? t('groups.copied') : t('groups.shareCode')}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Match Feed — upcoming predictions + recent results */}
-      {user && <GroupMatchFeed groupId={id!} userId={user.id} />}
+        {/* Match Feed */}
+        {user && <GroupMatchFeed groupId={id!} userId={user.id} />}
 
-      {/* Leaderboard (shown only when there are scored matches) */}
-      {leaderboard && leaderboard.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t('leaderboard.title')}</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Leaderboard */}
+        {leaderboard && leaderboard.length > 0 && (
+          <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+            <h2 className="font-bold text-sm text-center">{t('leaderboard.title')}</h2>
             <div className="space-y-1">
-              {/* Table header */}
-              <div className="flex items-center text-sm font-medium text-muted-foreground border-b pb-2 mb-2">
+              <div className="flex items-center text-[10px] font-medium text-muted-foreground border-b border-border pb-2 mb-1 uppercase tracking-wider">
                 <span className="w-8 text-center">{t('leaderboard.rank')}</span>
                 <span className="flex-1 ps-2">{t('leaderboard.player')}</span>
                 <span className="w-12 text-center">{t('leaderboard.points')}</span>
                 <span className="w-12 text-center">{t('leaderboard.jokers')}</span>
-                <span className="w-12 text-center">{t('leaderboard.matches')}</span>
               </div>
               {leaderboard.map((row, i) => (
                 <div
                   key={row.user_id}
-                  className={`flex items-center py-1.5 rounded px-1 ${
-                    row.user_id === user?.id ? 'bg-accent/50 font-semibold' : ''
+                  className={`flex items-center py-2 rounded-lg px-1 ${
+                    row.user_id === user?.id ? 'bg-primary/10' : ''
                   }`}
                 >
-                  <span className="w-8 text-center text-sm">{i + 1}</span>
-                  <span className="flex-1 ps-2 text-sm truncate">
+                  <span className="w-8 text-center text-sm font-bold">
+                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                  </span>
+                  <span className="flex-1 ps-2 text-sm truncate font-medium">
                     {row.display_name || '—'}
                   </span>
-                  <span className="w-12 text-center text-sm font-bold">
+                  <span className="w-12 text-center text-sm font-bold text-primary">
                     {row.total_points ?? 0}
                   </span>
-                  <span className="w-12 text-center text-sm">{row.jokers_used ?? 0}/3</span>
-                  <span className="w-12 text-center text-sm">{row.matches_scored ?? 0}</span>
+                  <span className="w-12 text-center text-xs text-muted-foreground">
+                    {row.jokers_used ?? 0}/3
+                  </span>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {/* Members */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
+        {/* Members */}
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+          <h2 className="font-bold text-sm">
             {t('groups.members')} ({members?.length ?? 0})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </h2>
           <ul className="space-y-2">
             {members?.map((m) => {
               const u = m.users as unknown as {
@@ -206,7 +203,7 @@ export default function GroupDetailPage() {
               const initial = (u?.display_name ?? '?')[0].toUpperCase();
               return (
                 <li key={m.user_id} className="flex items-center gap-3 text-sm">
-                  <span className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-xs font-bold shrink-0">
+                  <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold shrink-0 text-primary">
                     {initial}
                   </span>
                   <span className={m.user_id === user?.id ? 'font-semibold' : ''}>
@@ -221,25 +218,25 @@ export default function GroupDetailPage() {
               );
             })}
           </ul>
-        </CardContent>
-      </Card>
-
-      {/* Leave Group (only non-creators) */}
-      {!isCreator && (
-        <div className="text-center pt-4 pb-8">
-          <button
-            onClick={() => {
-              if (window.confirm(t('groups.leaveConfirm'))) {
-                leaveGroup.mutate();
-              }
-            }}
-            className="text-sm text-destructive underline underline-offset-4 hover:text-destructive/80"
-            disabled={leaveGroup.isPending}
-          >
-            {t('groups.leaveGroup')}
-          </button>
         </div>
-      )}
+
+        {/* Leave Group */}
+        {!isCreator && (
+          <div className="text-center pt-2 pb-4">
+            <button
+              onClick={() => {
+                if (window.confirm(t('groups.leaveConfirm'))) {
+                  leaveGroup.mutate();
+                }
+              }}
+              className="text-sm text-destructive hover:text-destructive/80 transition-colors"
+              disabled={leaveGroup.isPending}
+            >
+              {t('groups.leaveGroup')}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
