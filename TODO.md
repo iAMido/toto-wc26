@@ -78,19 +78,18 @@
 - [x] `sync/seed_matches.py` — fetches all fixtures via `/fixtures?league=1&season=2026`, maps round→stage, upserts into `matches`
 - [x] `sync/seed_players.py` — fetches 48 squads via `/players/squads`, filters FW+MF, upserts into `tournaments_players`, loads Hebrew names from `he_player_names.json`
 - [x] `sync/he_player_names.json` — starter file with ~20 top-player Hebrew names
-- [ ] Run `seed_matches.py` + `seed_players.py` against live API (requires API-Football key — user action)
+- [x] Seeded 33 test matches (4 groups + 9 knockout) + 39 players via SQL (API-Football free tier doesn't cover 2026 season — upgrade plan to seed real fixtures)
 - [x] Commit + push
 
 ## Chunk 6 — Live Sync Edge Function + pg_cron
 
 - [x] `supabase/functions/sync-fixtures/index.ts` — checks ±3h window for active matches, single API-Football call per date, updates statuses + scores, fires scoring trigger
 - [x] `supabase/migrations/0003_cron.sql` — enables `pg_cron` + `pg_net`, schedules every 20 min during June-July 0-2h + 10-23h UTC
-- [ ] **Operational (user action, before tournament):**
-  - [ ] Enable `pg_cron` + `pg_net` extensions in Supabase dashboard
-  - [ ] `supabase functions deploy sync-fixtures`
-  - [ ] `supabase secrets set API_FOOTBALL_KEY=<your-key>`
-  - [ ] Apply migration 0003 via MCP `apply_migration`
-  - [ ] Smoke-test via `supabase functions invoke sync-fixtures`
+- [x] **Operational:**
+  - [x] Enable `pg_cron` + `pg_net` extensions via SQL
+  - [x] Deploy Edge Function `sync-fixtures` via MCP
+  - [ ] **Set API_FOOTBALL_KEY secret** — run: `npx supabase login` then `npx supabase secrets set API_FOOTBALL_KEY=304974ea4e93c64910f09ee3d5becd8f --project-ref zxexfeihapgecttjtsbu`
+  - [x] Apply migration 0003 (pg_cron schedule) via MCP
 - [x] Commit + push
 
 ## Chunk 7 — Auth + i18n Shell + Joker Budget State
@@ -151,11 +150,12 @@
 - [x] Free-text fallback for unlisted players (scorer + assister)
 - [x] RLS-locked at tournament start (checks `tournaments.start_at`)
 - [x] i18n: selectTeam key (EN + HE)
-- [ ] Commit + push
+- [x] Commit + push
 
 ## Chunk 12 — Final Verification + Deploy
 
-- [ ] `npm run build` clean
+- [x] `npm run build` clean (0 errors, 540 KB / 157 KB gz)
+- [x] `vercel.json` — Vite framework, SPA rewrites, dist output
 - [ ] Manual E2E: two-user reveal test (pre/post kickoff)
 - [ ] Manual E2E: group-stage scoring → leaderboard updates within 1s
 - [ ] Manual E2E: knockout AET path
@@ -163,7 +163,7 @@
 - [ ] Manual E2E: joker UI cap (3 set → 4th disabled) + DB cap (raw SQL bypass rejected)
 - [ ] Manual E2E: HE/EN toggle, `<html dir lang>` flips, no layout breaks
 - [ ] PWA install: Chrome Android Add-to-Home-Screen → fullscreen launch
-- [ ] Deploy to Vercel + set env vars
+- [ ] Deploy to Vercel + set env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
 - [ ] Smoke-test prod
 - [ ] Tick all remaining boxes; final commit + push
 
