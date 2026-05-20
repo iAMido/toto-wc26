@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useRealtimeMatches } from '@/hooks/useRealtimeMatches';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -53,6 +54,9 @@ export default function MatchListPage() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const { user, loading: authLoading } = useRequireAuth();
+
+  // Real-time match updates → auto-refresh list
+  useRealtimeMatches();
 
   const { data: matches, isLoading: matchesLoading } = useQuery({
     queryKey: ['matches'],

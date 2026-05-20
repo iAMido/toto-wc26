@@ -86,6 +86,13 @@
     "locked": "Tournament predictions are locked.",
     "saved": "Tournament picks saved!"
   },
+  "feed": {
+    "upcoming": "Upcoming Matches",
+    "recent": "Recent Results",
+    "submitted": "Submitted",
+    "pending": "Pending",
+    "viewAll": "View All Matches"
+  },
   "common": {
     "loading": "Loading...",
     "error": "Something went wrong.",

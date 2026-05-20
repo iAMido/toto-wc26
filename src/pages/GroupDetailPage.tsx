@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useRealtimeMatches } from '@/hooks/useRealtimeMatches';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import GroupMatchFeed from '@/components/GroupMatchFeed';
 
 export default function GroupDetailPage() {
   const { t } = useTranslation();
@@ -14,6 +16,9 @@ export default function GroupDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [codeCopied, setCodeCopied] = useState(false);
+
+  // Subscribe to real-time match updates → auto-invalidate leaderboard + feed
+  useRealtimeMatches();
 
   // Fetch group info
   const { data: group, isLoading: groupLoading } = useQuery({
@@ -140,6 +145,9 @@ export default function GroupDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Match Feed — upcoming predictions + recent results */}
+      {user && <GroupMatchFeed groupId={id!} userId={user.id} />}
 
       {/* Leaderboard (shown only when there are scored matches) */}
       {leaderboard && leaderboard.length > 0 && (

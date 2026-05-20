@@ -129,15 +129,19 @@
 - [x] `MatchListPage` grouped by date with status badges (open / predicted / locked / scored)
 - [x] `/matches` route + nav link on HomePage
 - [x] i18n keys: allMatches, predicted, result (EN + HE)
-- [ ] Commit + push
+- [x] Commit + push
 
 ## Chunk 10 — Delayed Reveal Feed + Realtime Leaderboard
 
-- [ ] Group feed — pre-kickoff shows "submitted/pending" badges, no scores
-- [ ] Group feed — post-kickoff fetches & shows all members' scores + joker badges
-- [ ] `useRealtimeMatches` hook — `postgres_changes` subscription on `matches` table
-- [ ] On `matches.status` flip → invalidate `['leaderboard', groupId]` + `['predictions', matchId]`
-- [ ] Optimistic UI on own prediction submit
+- [x] Group feed — pre-kickoff shows "submitted/pending" badges, no scores (via `get_match_predictions_for_group` RPC)
+- [x] Group feed — post-kickoff fetches & shows all members' scores + joker badges
+- [x] `useRealtimeMatches` hook — `postgres_changes` subscription on `matches` table
+- [x] On `matches.status` flip → invalidate leaderboard, predictions, group-feed queries
+- [x] `GroupMatchFeed` component (upcoming 5 + recent 5), embedded in GroupDetailPage
+- [x] Migration 0005: `get_match_predictions_for_group` SECURITY DEFINER RPC (delayed reveal)
+- [x] Realtime hook added to MatchListPage + GroupDetailPage
+- [x] Optimistic UI via React Query invalidation on prediction submit
+- [x] i18n keys: feed.upcoming, feed.recent, feed.submitted, feed.pending, feed.viewAll (EN + HE)
 - [ ] Commit + push
 
 ## Chunk 11 — Tournament Predictions UI
