@@ -118,15 +118,17 @@
 - [x] Group detail page (members, leaderboard, invite code copy, leave group)
 - [x] shadcn `Input` + `Card` components
 - [x] i18n keys for groups (EN + HE): createSuccess, joinSuccess, invalidCode, alreadyMember, leaveGroup, shareCode, creator
-- [ ] Commit + push
+- [x] Commit + push
 
 ## Chunk 9 — Match Prediction UI (with live Joker enforcement)
 
-- [ ] `MatchPredictionForm` — home/away inputs, joker toggle, knockout advancer radio
-- [ ] Joker toggle reads `useJokerBudget()` — disabled at 3 jokers unless this match already has it set
-- [ ] On submit success → invalidate joker-budget query
-- [ ] RLS-rejection toast (`locked`) on past-kickoff submit
-- [ ] Match list page grouped by date with state badges (`🔒 locked / ✏️ open / ⏳ scored`)
+- [x] `MatchPredictionPage` — home/away inputs, joker toggle, knockout advancer radio
+- [x] Joker toggle reads `useJokerBudget()` — disabled at 3 jokers unless this match already has it set
+- [x] On submit success → invalidate joker-budget query
+- [x] RLS-rejection toast (`locked`) on past-kickoff submit
+- [x] `MatchListPage` grouped by date with status badges (open / predicted / locked / scored)
+- [x] `/matches` route + nav link on HomePage
+- [x] i18n keys: allMatches, predicted, result (EN + HE)
 - [ ] Commit + push
 
 ## Chunk 10 — Delayed Reveal Feed + Realtime Leaderboard

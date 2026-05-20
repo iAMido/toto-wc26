@@ -8,6 +8,7 @@
     "groups": "הקבוצות שלי",
     "tournament": "ניחושי טורניר",
     "leaderboard": "טבלה",
+    "matches": "משחקים",
     "signOut": "התנתק",
     "switchLang": "English"
   },
@@ -53,6 +54,9 @@
       "locked": "נעול",
       "scored": "נוקד"
     },
+    "allMatches": "כל המשחקים",
+    "predicted": "נוחש",
+    "result": "תוצאה",
     "advancer": "מי עולה?",
     "advancerHint": "ניחשת תיקו — בחר מי עולה בפנדלים."
   },

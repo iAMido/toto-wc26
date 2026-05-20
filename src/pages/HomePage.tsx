@@ -27,6 +27,9 @@ export default function HomePage() {
       </p>
 
       <nav className="flex flex-col gap-3 w-full max-w-sm">
+        <Link to="/matches">
+          <Button variant="outline" className="w-full">{t('nav.matches')}</Button>
+        </Link>
         <Link to="/groups">
           <Button variant="outline" className="w-full">{t('nav.groups')}</Button>
         </Link>

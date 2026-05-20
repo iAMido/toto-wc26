@@ -8,6 +8,7 @@
     "groups": "My Groups",
     "tournament": "Tournament Picks",
     "leaderboard": "Leaderboard",
+    "matches": "Matches",
     "signOut": "Sign Out",
     "switchLang": "עברית"
   },
@@ -53,6 +54,9 @@
       "locked": "Locked",
       "scored": "Scored"
     },
+    "allMatches": "All Matches",
+    "predicted": "Predicted",
+    "result": "Result",
     "advancer": "Who advances?",
     "advancerHint": "You predicted a draw — pick the penalty winner."
   },
