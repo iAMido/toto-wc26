@@ -28,7 +28,15 @@
     "members": "חברים",
     "noGroups": "אתה עדיין לא בקבוצה.",
     "enterCode": "הזן קוד הזמנה בן 8 תווים",
-    "copied": "קוד ההזמנה הועתק!"
+    "copied": "קוד ההזמנה הועתק!",
+    "shareCode": "העתק קוד",
+    "createSuccess": "הקבוצה נוצרה!",
+    "joinSuccess": "הצטרפת לקבוצה!",
+    "invalidCode": "קוד הזמנה לא תקין. בדוק ונסה שוב.",
+    "alreadyMember": "אתה כבר חבר בקבוצה הזו.",
+    "leaveGroup": "עזוב קבוצה",
+    "leaveConfirm": "בטוח שאתה רוצה לעזוב את הקבוצה?",
+    "creator": "יוצר"
   },
   "match": {
     "prediction": "הניחוש שלך",

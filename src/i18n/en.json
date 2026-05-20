@@ -28,7 +28,15 @@
     "members": "Members",
     "noGroups": "You're not in any groups yet.",
     "enterCode": "Enter 8-character invite code",
-    "copied": "Invite code copied!"
+    "copied": "Invite code copied!",
+    "shareCode": "Copy Code",
+    "createSuccess": "Group created!",
+    "joinSuccess": "Joined group!",
+    "invalidCode": "Invalid invite code. Check and try again.",
+    "alreadyMember": "You're already a member of this group.",
+    "leaveGroup": "Leave Group",
+    "leaveConfirm": "Are you sure you want to leave this group?",
+    "creator": "Creator"
   },
   "match": {
     "prediction": "Your Prediction",

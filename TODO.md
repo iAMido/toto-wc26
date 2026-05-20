@@ -112,9 +112,12 @@
 
 ## Chunk 8 — Groups & Membership UI
 
-- [ ] `Groups` page — list + create + join-via-code
-- [ ] Group create flow generates 8-char invite code
-- [ ] Group detail page (members, leaderboard placeholder, predict next match link)
+- [x] `Groups` page — list + create + join-via-code
+- [x] Group create flow generates 8-char invite code
+- [x] `join_group_by_invite_code` RPC (SECURITY DEFINER — bypasses groups SELECT RLS for code lookup)
+- [x] Group detail page (members, leaderboard, invite code copy, leave group)
+- [x] shadcn `Input` + `Card` components
+- [x] i18n keys for groups (EN + HE): createSuccess, joinSuccess, invalidCode, alreadyMember, leaveGroup, shareCode, creator
 - [ ] Commit + push
 
 ## Chunk 9 — Match Prediction UI (with live Joker enforcement)
