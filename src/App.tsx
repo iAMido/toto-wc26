@@ -7,6 +7,7 @@ import GroupsPage from '@/pages/GroupsPage';
 import GroupDetailPage from '@/pages/GroupDetailPage';
 import MatchListPage from '@/pages/MatchListPage';
 import MatchPredictionPage from '@/pages/MatchPredictionPage';
+import TournamentPredictionsPage from '@/pages/TournamentPredictionsPage';
 import PlaceholderPage from '@/pages/PlaceholderPage';
 
 const queryClient = new QueryClient({
@@ -30,7 +31,7 @@ function App() {
             <Route path="/groups/:id" element={<GroupDetailPage />} />
             <Route path="/matches" element={<MatchListPage />} />
             <Route path="/match/:id" element={<MatchPredictionPage />} />
-            <Route path="/tournament" element={<PlaceholderPage title="Tournament Predictions" />} />
+            <Route path="/tournament" element={<TournamentPredictionsPage />} />
             <Route path="/leaderboard/:groupId" element={<PlaceholderPage title="Leaderboard" />} />
           </Routes>
         </BrowserRouter>

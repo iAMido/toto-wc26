@@ -142,13 +142,15 @@
 - [x] Realtime hook added to MatchListPage + GroupDetailPage
 - [x] Optimistic UI via React Query invalidation on prediction submit
 - [x] i18n keys: feed.upcoming, feed.recent, feed.submitted, feed.pending, feed.viewAll (EN + HE)
-- [ ] Commit + push
+- [x] Commit + push
 
 ## Chunk 11 — Tournament Predictions UI
 
-- [ ] `TournamentPredictions` page — 4 selectors (Champion, Runner-up, Top Scorer, Top Assister)
-- [ ] Free-text fallback for unlisted players
-- [ ] RLS-locked at tournament start
+- [x] `TournamentPredictionsPage` — 4 selectors (Champion, Runner-up, Top Scorer, Top Assister)
+- [x] Players grouped by team in `<optgroup>` with bilingual names (HE/EN)
+- [x] Free-text fallback for unlisted players (scorer + assister)
+- [x] RLS-locked at tournament start (checks `tournaments.start_at`)
+- [x] i18n: selectTeam key (EN + HE)
 - [ ] Commit + push
 
 ## Chunk 12 — Final Verification + Deploy

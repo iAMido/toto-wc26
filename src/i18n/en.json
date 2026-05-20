@@ -80,6 +80,7 @@
     "title": "Tournament Predictions",
     "champion": "Champion",
     "runnerUp": "Runner-up",
+    "selectTeam": "Select a team",
     "topScorer": "Top Scorer",
     "topAssister": "Top Assister",
     "freetext": "Other (unlisted player)",
