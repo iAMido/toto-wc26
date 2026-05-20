@@ -33,7 +33,11 @@
 
 > ⚠️ The Supabase MCP is currently connected to an unrelated project (running/coaching app, 15 tables). **User needs to create a fresh project at supabase.com/dashboard and reconnect the MCP** before `apply_migration` can run safely.
 
-- [ ] **BLOCKED:** Create fresh Supabase project `toto-wc26` + reconnect MCP (user action)
+- [x] Create fresh Supabase project `toto-wc26` — ref `zxexfeihapgecttjtsbu`
+- [x] Add project-scoped MCP via `claude mcp add --scope project ... project_ref=zxexfeihapgecttjtsbu` (file: `.mcp.json`)
+- [x] Write `.env.local` (gitignored) with `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
+- [x] Add `supabase.txt` / `secrets.txt` / `credentials.txt` to `.gitignore` so the credentials dump never leaks
+- [ ] **NEXT (user action):** Restart Claude Code and authenticate the new supabase MCP (OAuth) — then I'll apply migration 0001
 - [x] Write `supabase/migrations/0001_init.sql`
   - [x] `users` synced from `auth.users` via `handle_new_user` trigger
   - [x] `tournaments` (single-row config with WC2026 `start_at`)

@@ -11,6 +11,10 @@ dist-ssr/
 .env.*.local
 *.pem
 *.key
+# Local credentials dump created by the user — NEVER commit
+supabase.txt
+secrets.txt
+credentials.txt
 
 # --- Logs ---
 *.log
