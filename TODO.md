@@ -163,17 +163,25 @@
 - [ ] Manual E2E: joker UI cap (3 set → 4th disabled) + DB cap (raw SQL bypass rejected)
 - [ ] Manual E2E: HE/EN toggle, `<html dir lang>` flips, no layout breaks
 - [ ] PWA install: Chrome Android Add-to-Home-Screen → fullscreen launch
-- [ ] Deploy to Vercel + set env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
+- [x] Deploy to Vercel + set env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
+- [x] Production URL: **https://toto-il.vercel.app**
 - [ ] Smoke-test prod
+- [ ] Manual E2E tests (two-user reveal, scoring, joker cap, i18n, PWA install)
 - [ ] Tick all remaining boxes; final commit + push
 
 ---
 
 ## Operational prereqs (user must supply before Chunks 3+)
 
-- [ ] API-Football API key
-- [ ] Supabase project URL
-- [ ] Supabase anon key
-- [ ] Supabase service role key
-- [ ] Vercel account
-- [ ] GitHub auth on this machine (for `git push` to `iAMido/toto-wc26`)
+- [x] API-Football API key (free tier — doesn't cover 2026 season; upgrade needed for real fixtures)
+- [x] Supabase project URL
+- [x] Supabase anon key
+- [x] Supabase service role key
+- [x] Vercel account
+- [x] GitHub auth on this machine (for `git push` to `iAMido/toto-wc26`)
+
+## Remaining manual steps
+
+- [ ] **Supabase Auth redirect URL** — Dashboard → Authentication → URL Configuration → add `https://toto-il.vercel.app` to Site URL and Redirect URLs
+- [ ] **Set Edge Function secret** — run: `npx supabase login` then `npx supabase secrets set API_FOOTBALL_KEY=304974ea4e93c64910f09ee3d5becd8f --project-ref zxexfeihapgecttjtsbu`
+- [ ] **Upgrade API-Football plan** — free tier blocks 2026 season data; upgrade to access real WC2026 fixtures, then re-run `python sync/seed_matches.py`
