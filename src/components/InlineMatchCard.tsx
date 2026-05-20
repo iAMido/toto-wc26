@@ -5,6 +5,7 @@ import { useJokerBudget, useInvalidateJokerBudget } from '@/hooks/useJokerBudget
 import { supabase } from '@/lib/supabase';
 import { getTeamName, getPlaceholderLabel } from '@/lib/team-utils';
 import TeamFlag from '@/components/TeamFlag';
+import { Button } from '@/components/ui/button';
 
 /* ---------- constants ---------- */
 
@@ -75,8 +76,9 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
   const [awayScore, setAwayScore] = useState<number | null>(prediction != null ? prediction.away : null);
   const [jokerUsed, setJokerUsed] = useState(prediction?.joker_used ?? false);
   const [advancer, setAdvancer] = useState<string | null>(prediction?.advancer_team_id ?? null);
-  // 'error' = generic server failure; 'locked' = RLS rejected (kickoff passed)
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'locked'>('idle');
+  // 'error' = generic server failure; 'locked' = RLS rejected (kickoff passed);
+  // 'jokerCap' = DB trigger rejected because user already has 3 jokers saved.
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'locked' | 'jokerCap'>('idle');
 
   // Sync from prediction prop
   useEffect(() => {
@@ -117,7 +119,15 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
   const needsAdvancer = isKnockout && isDraw && !isLocked;
 
   const jokerOnThis = jokerBudget?.jokerMatchIds.has(match.id) ?? false;
-  const jokerDisabled = isLocked || (!jokerOnThis && (jokerBudget?.remaining ?? 0) === 0);
+  // Joker is disabled in three cases:
+  //   1. The match is locked (kickoff passed or TBD).
+  //   2. The user has hit the 3-joker cap on OTHER matches.
+  //   3. The user hasn't set a complete prediction yet — without scores
+  //      there's nothing to save, so the toggle would be a no-op that
+  //      misleadingly looks like an added joker.
+  const scoresIncomplete = homeScore == null || awayScore == null;
+  const atCap = !jokerOnThis && (jokerBudget?.remaining ?? 0) === 0;
+  const jokerDisabled = isLocked || atCap || scoresIncomplete;
 
 
   // Countdown
@@ -175,13 +185,20 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
     },
     onError: (err: Error & { code?: string; status?: number }) => {
       const msg = err.message ?? '';
-      // 403 + RLS phrase = genuine kickoff lock. Everything else (500s, 4xx
-      // from constraint violations, network errors) is a generic server error
-      // and should NOT masquerade as "match started".
-      const isRlsLock = msg.includes('row-level security') || msg.includes('new row violates');
-      setSaveStatus(isRlsLock ? 'locked' : 'error');
-      if (isRlsLock) {
-        // Roll back optimistic state to what was last saved
+      // Differentiate the three failure modes:
+      //   1. joker_cap_exceeded — DB trigger blocks the 4th joker. Revert the
+      //      toggle only; keep the score the user typed.
+      //   2. RLS lock — kickoff passed. Roll back ALL optimistic state.
+      //   3. Anything else (500, network, etc.) — keep state, show generic error.
+      const isJokerCap = msg.includes('joker_cap_exceeded') || /joker.*3/i.test(msg);
+      const isRlsLock = !isJokerCap && (msg.includes('row-level security') || msg.includes('new row violates'));
+
+      if (isJokerCap) {
+        // Roll back ONLY the joker flip — the rest of the prediction is fine.
+        setJokerUsed(prediction?.joker_used ?? false);
+        setSaveStatus('jokerCap');
+      } else if (isRlsLock) {
+        // Full roll-back of optimistic state
         if (prediction) {
           setHomeScore(prediction.home);
           setAwayScore(prediction.away);
@@ -193,26 +210,51 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
           setJokerUsed(false);
           setAdvancer(null);
         }
+        setSaveStatus('locked');
+      } else {
+        setSaveStatus('error');
       }
+
+      // Make sure the joker budget query refetches even on error, so the UI
+      // doesn't get out of sync with the DB.
+      invalidateJoker();
       setTimeout(() => setSaveStatus('idle'), 3500);
     },
   });
 
-  /* ---- debounced auto-save trigger ---- */
+  /* ---- save flow: debounced auto-save + immediate flush ---- */
+
+  /** Returns true if the prediction is in a state that can be persisted. */
+  const isPredictionReady = (h: number | null, a: number | null, adv: string | null) => {
+    if (h == null || a == null || h < 0 || a < 0 || isLocked) return false;
+    if (isKnockout && h === a && adv == null) return false; // KO draw needs advancer
+    return true;
+  };
 
   const scheduleAutoSave = useCallback(
     (h: number | null, a: number | null, joker: boolean, adv: string | null) => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      if (h == null || a == null || h < 0 || a < 0 || isLocked) return;
-
-      const koNeedsAdv = isKnockout && h === a;
-      if (koNeedsAdv && adv == null) return; // wait for advancer pick
-
+      if (!isPredictionReady(h, a, adv)) return;
+      // isPredictionReady has already verified h and a are non-null numbers.
       setSaveStatus('saving');
       saveTimer.current = setTimeout(() => {
-        submit.mutate({ home: h, away: a, joker, adv });
+        submit.mutate({ home: h as number, away: a as number, joker, adv });
       }, AUTOSAVE_DELAY);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isLocked, isKnockout, submit],
+  );
+
+  /** Cancel any pending debounce and fire the upsert immediately. Used by
+   *  the Save button and by joker-toggle (which shouldn't wait 800ms). */
+  const flushSave = useCallback(
+    (h: number | null, a: number | null, joker: boolean, adv: string | null) => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (!isPredictionReady(h, a, adv)) return;
+      setSaveStatus('saving');
+      submit.mutate({ home: h as number, away: a as number, joker, adv });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isLocked, isKnockout, submit],
   );
 
@@ -247,9 +289,13 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
 
   const toggleJoker = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (jokerDisabled && !jokerUsed) return; // guard against keyboard-bypass
     const next = !jokerUsed;
     setJokerUsed(next);
-    scheduleAutoSave(homeScore, awayScore, next, advancer);
+    // Fire IMMEDIATELY (no 800ms debounce). Joker is a discrete commitment
+    // that must hit the DB right away so the budget refreshes and other
+    // open cards re-render their disabled state in real-time.
+    flushSave(homeScore, awayScore, next, advancer);
   };
 
   /* ---- direct numeric input handlers ---- */
@@ -578,6 +624,11 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                     {lang === 'he' ? '⚠ שמירה נכשלה — נסה שוב' : '⚠ Save failed — try again'}
                   </span>
                 )}
+                {saveStatus === 'jokerCap' && (
+                  <span className="save-indicator error">
+                    🚫 {lang === 'he' ? 'הגעת למקסימום 3 ג׳וקרים' : 'Joker cap reached (3 max)'}
+                  </span>
+                )}
               </div>
 
               {/* Joker toggle */}
@@ -585,14 +636,16 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                 className="flex items-center justify-between p-3 rounded-xl bg-muted/60 border border-border/50"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div>
+                <div className="min-w-0 pe-2">
                   <p className="text-sm font-medium">{t('joker.label')}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {jokerBudget
-                      ? jokerBudget.remaining > 0
-                        ? t('joker.remaining', { count: jokerBudget.remaining })
-                        : t('joker.capReached')
-                      : ''}
+                    {scoresIncomplete
+                      ? (lang === 'he' ? 'הזן ניחוש כדי להפעיל ג׳וקר' : 'Set a score first to enable Joker')
+                      : atCap && !jokerOnThis
+                        ? t('joker.capReached')
+                        : jokerBudget
+                          ? t('joker.remaining', { count: jokerBudget.remaining })
+                          : ''}
                   </p>
                 </div>
                 <button
@@ -652,6 +705,26 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                   </div>
                 </div>
               )}
+
+              {/* Explicit Save button. Auto-save still runs in the background
+                  on every change, but tapping this flushes any pending
+                  debounce and confirms immediately. */}
+              <Button
+                onClick={(e) => { e.stopPropagation(); flushSave(homeScore, awayScore, jokerUsed, advancer); }}
+                disabled={
+                  submit.isPending
+                  || !isPredictionReady(homeScore, awayScore, advancer)
+                }
+                className="w-full rounded-xl h-11 text-base font-bold"
+              >
+                {submit.isPending
+                  ? (lang === 'he' ? 'שומר...' : 'Saving...')
+                  : saveStatus === 'saved'
+                    ? `✓ ${t('match.saved')}`
+                    : prediction
+                      ? t('match.update')
+                      : t('match.submit')}
+              </Button>
             </>
           ) : prediction ? (
             /* ---------- LOCKED / SCORED: prediction summary ---------- */
