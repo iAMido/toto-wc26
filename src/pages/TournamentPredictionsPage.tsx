@@ -5,7 +5,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getFlag, getTeamName } from '@/lib/team-utils';
+import { getFlag, getTeamName, getAllTeams } from '@/lib/team-utils';
 
 /* ---------- component ---------- */
 
@@ -38,21 +38,10 @@ export default function TournamentPredictionsPage() {
     },
   });
 
-  const { data: teams } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matches')
-        .select('home_team, away_team');
-      if (error) throw error;
-      const set = new Set<string>();
-      data?.forEach((m) => {
-        set.add(m.home_team);
-        set.add(m.away_team);
-      });
-      return Array.from(set).sort();
-    },
-  });
+  // Pull the canonical 48-team roster from the team dictionary, not from
+  // matches — knockout placeholder rows have null home/away_team and would
+  // make the list incomplete. Alphabetized in the active language.
+  const teams = useMemo(() => getAllTeams(lang), [lang]);
 
   const { data: players } = useQuery({
     queryKey: ['tournament-players'],
@@ -181,35 +170,56 @@ export default function TournamentPredictionsPage() {
     return (
       <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{icon}</span>
+          <span className="text-xl" aria-hidden="true">{icon}</span>
           <h3 className="font-bold text-sm">{label}</h3>
           {value && (
-            <span className="ms-auto text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
+            <span className="ms-auto text-xs text-primary font-bold bg-primary/15 border border-primary/30 px-2 py-0.5 rounded-full">
               {getFlag(value)} {getTeamName(value, lang)}
             </span>
           )}
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          {teams?.filter((team) => team !== exclude).map((team) => (
-            <button
-              key={team}
-              type="button"
-              onClick={() => onChange(team === value ? '' : team)}
-              disabled={isLocked}
-              className={`
-                flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-center
-                ${value === team
-                  ? 'bg-primary/15 border-primary border-2 shadow-sm'
-                  : 'bg-muted/30 border border-border/50 hover:bg-muted/60'}
-                ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
-              `}
-            >
-              <span className="text-xl">{getFlag(team)}</span>
-              <span className="text-[10px] font-medium leading-tight truncate w-full">
-                {getTeamName(team, lang)}
-              </span>
-            </button>
-          ))}
+        {/* 3-column grid keeps 48dp touch targets on ~390px screens.
+            Teams are pre-sorted alphabetically by current language in `teams`. */}
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={label}>
+          {teams.map((team) => {
+            const isExcluded = team === exclude;
+            const selected = value === team;
+            const disabled = isLocked || isExcluded;
+            return (
+              <button
+                key={team}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                aria-label={getTeamName(team, lang)}
+                onClick={() => onChange(team === value ? '' : team)}
+                disabled={disabled}
+                className={`
+                  relative flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl text-center min-h-[72px] transition-all
+                  ${selected
+                    ? 'bg-primary/15 border-2 border-primary shadow-lg shadow-primary/20'
+                    : isExcluded
+                      ? 'bg-muted/20 border border-border/30 opacity-30 grayscale'
+                      : 'bg-muted/30 border border-border/50 hover:bg-muted/60 active:scale-95'}
+                  ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+                `}
+              >
+                {/* Selected-state checkmark overlay */}
+                {selected && (
+                  <span
+                    className="absolute top-1 end-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[11px] font-black flex items-center justify-center shadow-sm"
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+                )}
+                <span className="text-2xl leading-none" aria-hidden="true">{getFlag(team)}</span>
+                <span className="text-[10px] font-semibold leading-tight truncate w-full">
+                  {getTeamName(team, lang)}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     );

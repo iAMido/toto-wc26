@@ -110,6 +110,27 @@ export default function HomePage() {
     staleTime: 60_000,
   });
 
+  // Lightweight api_fixture_id → match_number lookup so InlineMatchCard can
+  // render WIN_<id> / LOSE_<id> knockout placeholders as "Winner Match 73".
+  const { data: matchNumberLookup } = useQuery({
+    queryKey: ['match-number-lookup'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('api_fixture_id, match_number');
+      if (error) throw error;
+      const map = new Map<number, number>();
+      for (const row of data ?? []) {
+        if (row.api_fixture_id != null && row.match_number != null) {
+          map.set(row.api_fixture_id, row.match_number);
+        }
+      }
+      return map;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60_000, // numbers don't change at runtime
+  });
+
   // Fetch user's groups + standings
   const { data: groupStandings } = useQuery({
     queryKey: ['home-standings', user?.id],
@@ -299,6 +320,7 @@ export default function HomePage() {
                     userId={user!.id}
                     expanded={expandedMatchId === m.id}
                     onToggle={() => setExpandedMatchId(expandedMatchId === m.id ? null : m.id)}
+                    matchNumberLookup={matchNumberLookup}
                   />
                 );
               })}

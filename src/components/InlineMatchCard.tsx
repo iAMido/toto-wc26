@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useJokerBudget, useInvalidateJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
-import { getFlag, getTeamName, getCode } from '@/lib/team-utils';
+import { getFlag, getTeamName, getCode, getPlaceholderLabel } from '@/lib/team-utils';
 
 /* ---------- constants ---------- */
 
@@ -15,14 +15,18 @@ const AUTOSAVE_DELAY = 800; // ms debounce
 
 export interface MatchData {
   id: string;
-  home_team: string;
-  away_team: string;
+  home_team: string | null;
+  away_team: string | null;
+  home_team_placeholder?: string | null;
+  away_team_placeholder?: string | null;
+  match_number?: number | null;
   kickoff_at: string;
   stage: string;
   status: string;
   home_score_120: number | null;
   away_score_120: number | null;
   advancer_team_id?: string | null;
+  api_fixture_id?: number | null;
 }
 
 export interface PredictionData {
@@ -40,13 +44,25 @@ interface Props {
   userId: string;
   expanded: boolean;
   onToggle: () => void;
+  /** api_fixture_id → match_number map, used to resolve WIN_<id>/LOSE_<id> placeholders */
+  matchNumberLookup?: Map<number, number>;
 }
 
 /* ---------- component ---------- */
 
-export default function InlineMatchCard({ match, prediction, userId, expanded, onToggle }: Props) {
+export default function InlineMatchCard({ match, prediction, userId, expanded, onToggle, matchNumberLookup }: Props) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
+  // TBD = team unknown yet (knockout slot waiting for group-stage resolution)
+  const isTbdHome = !match.home_team;
+  const isTbdAway = !match.away_team;
+  const isTbd = isTbdHome || isTbdAway;
+  const homeLabel = isTbdHome
+    ? getPlaceholderLabel(match.home_team_placeholder, lang, matchNumberLookup)
+    : getTeamName(match.home_team as string, lang);
+  const awayLabel = isTbdAway
+    ? getPlaceholderLabel(match.away_team_placeholder, lang, matchNumberLookup)
+    : getTeamName(match.away_team as string, lang);
   const queryClient = useQueryClient();
   const invalidateJoker = useInvalidateJokerBudget();
   const { data: jokerBudget } = useJokerBudget();
@@ -91,7 +107,8 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
 
   const now = new Date();
   const kickoff = new Date(match.kickoff_at);
-  const isLocked = now >= kickoff || FINISHED_STATUSES.has(match.status);
+  // TBD slots can never be predicted — they're locked until group stage resolves and seeds the teams
+  const isLocked = isTbd || now >= kickoff || FINISHED_STATUSES.has(match.status);
   const isKnockout = KNOCKOUT_STAGES.has(match.stage);
   const isFinished = FINISHED_STATUSES.has(match.status);
   const isDraw = homeScore != null && awayScore != null && homeScore === awayScore;
@@ -227,8 +244,36 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
     scheduleAutoSave(homeScore, awayScore, jokerUsed, team);
   };
 
+  /* ---- 1/X/2 quick-pick handlers ---- */
+  // Tapping a quick-pick fills a default exact score and saves immediately.
+  // User can then expand to fine-tune via the score steppers.
+  const quickPick = (e: React.MouseEvent, outcome: '1' | 'X' | '2') => {
+    e.stopPropagation();
+    if (isLocked) return;
+    let h: number;
+    let a: number;
+    if (outcome === '1') { h = 1; a = 0; }
+    else if (outcome === '2') { h = 0; a = 1; }
+    else { h = 1; a = 1; }
+    setHomeScore(h);
+    setAwayScore(a);
+    // Knockouts require an advancer when draw — we don't auto-pick that.
+    // The save will be deferred until user picks one (scheduleAutoSave guards this).
+    scheduleAutoSave(h, a, jokerUsed, advancer);
+  };
+
+  // Detect currently-implied outcome from the prediction (for visual selected state).
+  const currentOutcome: '1' | 'X' | '2' | null =
+    homeScore != null && awayScore != null
+      ? homeScore > awayScore ? '1'
+      : homeScore < awayScore ? '2'
+      : 'X'
+      : null;
+
   /* ---- can expand? ---- */
-  const canExpand = !isLocked || !!prediction;
+  // TBD cards expand to show a locked notice; otherwise need either an open
+  // prediction window or an existing prediction to review.
+  const canExpand = isTbd || !isLocked || !!prediction;
 
   /* ---- render ---- */
   return (
@@ -247,36 +292,51 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
         role={canExpand ? 'button' : undefined}
         tabIndex={canExpand ? 0 : undefined}
         aria-expanded={expanded}
-        aria-label={`${getTeamName(match.home_team, lang)} vs ${getTeamName(match.away_team, lang)}`}
+        aria-label={`${homeLabel} vs ${awayLabel}`}
         onKeyDown={(e) => { if (canExpand && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onToggle(); } }}
       >
-        {/* Date + time + countdown */}
+        {/* Date + time + match-number + countdown */}
         <div className="flex items-center justify-between mb-2">
-          <time className="text-[11px] text-muted-foreground" dateTime={match.kickoff_at}>
-            {dateStr} · {timeStr}
-          </time>
-          {!isLocked && countdown && (
+          <div className="flex items-center gap-2">
+            {match.match_number != null && (
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-900/40 border border-emerald-700/40 px-1.5 py-0.5 rounded-full tabular-nums" aria-label={`Match ${match.match_number}`}>
+                {lang === 'he' ? `מש׳ ${match.match_number}` : `M${match.match_number}`}
+              </span>
+            )}
+            <time className="text-[11px] text-muted-foreground" dateTime={match.kickoff_at}>
+              {dateStr} · {timeStr}
+            </time>
+          </div>
+          {isTbd ? (
+            <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
+              {lang === 'he' ? 'טרם נקבע' : 'TBD'}
+            </span>
+          ) : !isLocked && countdown ? (
             <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
               {countdown}
             </span>
-          )}
-          {isLocked && !isFinished && (
+          ) : isLocked && !isFinished ? (
             <span className="text-[10px] text-yellow-400 font-medium bg-yellow-400/10 px-2 py-0.5 rounded-full">
               🔒 {t('match.status.locked')}
             </span>
-          )}
-          {isFinished && (
+          ) : isFinished ? (
             <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
               {match.status}
             </span>
-          )}
+          ) : null}
         </div>
 
         {/* Teams row */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-2xl shrink-0" aria-hidden="true">{getFlag(match.home_team)}</span>
-            <span className="team-name">{getTeamName(match.home_team, lang)}</span>
+            {isTbdHome ? (
+              <span className="text-2xl shrink-0 grayscale opacity-40" aria-hidden="true">🛡️</span>
+            ) : (
+              <span className="text-2xl shrink-0" aria-hidden="true">{getFlag(match.home_team as string)}</span>
+            )}
+            <span className={`team-name ${isTbdHome ? 'text-muted-foreground italic' : ''}`}>
+              {homeLabel}
+            </span>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0 mx-1 tabular-nums" data-score>
@@ -286,7 +346,7 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                 <span className="text-xs text-muted-foreground">:</span>
                 <span className="text-lg font-black">{match.away_score_120}</span>
               </>
-            ) : prediction ? (
+            ) : prediction && !isTbd ? (
               <>
                 <span className="text-lg font-bold text-primary">{prediction.home}</span>
                 <span className="text-xs text-muted-foreground">:</span>
@@ -299,8 +359,14 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
           </div>
 
           <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-            <span className="team-name text-end">{getTeamName(match.away_team, lang)}</span>
-            <span className="text-2xl shrink-0" aria-hidden="true">{getFlag(match.away_team)}</span>
+            <span className={`team-name text-end ${isTbdAway ? 'text-muted-foreground italic' : ''}`}>
+              {awayLabel}
+            </span>
+            {isTbdAway ? (
+              <span className="text-2xl shrink-0 grayscale opacity-40" aria-hidden="true">🛡️</span>
+            ) : (
+              <span className="text-2xl shrink-0" aria-hidden="true">{getFlag(match.away_team as string)}</span>
+            )}
           </div>
         </div>
 
@@ -313,16 +379,69 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
           </div>
         )}
 
-        {/* "Tap to predict" hint */}
-        {!isLocked && !prediction && !expanded && (
-          <p className="text-center text-[10px] text-primary/60 mt-1.5">{t('match.tapToPredict')}</p>
+        {/* 1/X/2 quick-pick buttons — always visible on open, predictable matches */}
+        {!isFinished && !expanded && (
+          <div className="flex gap-1.5 mt-2.5" role="group" aria-label={lang === 'he' ? 'ניחוש מהיר' : 'Quick pick'}>
+            {(['1', 'X', '2'] as const).map((o) => {
+              const selected = currentOutcome === o && prediction != null;
+              const disabled = isLocked; // TBD and post-kickoff both block
+              return (
+                <button
+                  key={o}
+                  type="button"
+                  onClick={(e) => quickPick(e, o)}
+                  disabled={disabled}
+                  aria-pressed={selected}
+                  aria-label={
+                    o === '1' ? (lang === 'he' ? 'ניצחון בית' : 'Home win')
+                    : o === 'X' ? (lang === 'he' ? 'תיקו' : 'Draw')
+                    : (lang === 'he' ? 'ניצחון חוץ' : 'Away win')
+                  }
+                  className={`
+                    flex-1 h-11 rounded-lg font-black text-base tabular-nums transition-all
+                    ${disabled
+                      ? 'bg-muted/30 text-muted-foreground/40 cursor-not-allowed border border-border/40'
+                      : selected
+                        ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 border border-primary'
+                        : 'bg-muted/60 text-foreground hover:bg-muted active:scale-95 border border-border/60'}
+                  `}
+                >
+                  {disabled && isTbd ? '🔒' : o}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* TBD note (replaces tap-to-predict hint when matchup not yet set) */}
+        {isTbd && !expanded && (
+          <p className="text-center text-[10px] text-muted-foreground/70 mt-1.5">
+            {lang === 'he' ? 'יקבע לאחר שלב הבתים' : 'Set after group stage'}
+          </p>
         )}
       </div>
 
       {/* ====== EXPANDED CONTENT ====== */}
       {expanded && (
         <div className="px-3 pb-4 border-t border-border/50 pt-4 space-y-4">
-          {!isLocked ? (
+          {isTbd ? (
+            /* ---------- TBD: matchup not yet determined ---------- */
+            <div className="text-center space-y-2 py-2">
+              <span className="text-3xl block" aria-hidden="true">🔒</span>
+              <p className="text-sm font-bold">
+                {lang === 'he' ? 'המשחק טרם נקבע' : 'Matchup not yet determined'}
+              </p>
+              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                {lang === 'he'
+                  ? 'הקבוצות יתעדכנו אוטומטית בסיום שלב הבתים. לא ניתן לנחש עדיין.'
+                  : 'Teams will be filled in automatically once the group stage ends. Predictions are not available yet.'}
+              </p>
+              <div className="text-[11px] text-muted-foreground/80 pt-2 space-y-0.5">
+                <p>{lang === 'he' ? 'מארחת:' : 'Home:'} <span className="font-medium">{homeLabel}</span></p>
+                <p>{lang === 'he' ? 'אורחת:' : 'Away:'} <span className="font-medium">{awayLabel}</span></p>
+              </div>
+            </div>
+          ) : !isLocked ? (
             /* ---------- PREDICTION FORM ---------- */
             <>
               {/* Team display */}
@@ -465,7 +584,7 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                   <p className="text-xs font-medium text-center">{t('match.advancer')}</p>
                   <p className="text-[10px] text-muted-foreground text-center">{t('match.advancerHint')}</p>
                   <div className="flex gap-2" role="radiogroup" aria-label={t('match.advancer')}>
-                    {[match.home_team, match.away_team].map((team) => (
+                    {([match.home_team, match.away_team].filter(Boolean) as string[]).map((team) => (
                       <button
                         key={team}
                         type="button"

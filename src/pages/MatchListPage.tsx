@@ -73,6 +73,18 @@ export default function MatchListPage() {
     enabled: !!user,
   });
 
+  // api_fixture_id → match_number lookup for resolving WIN_<id> / LOSE_<id>
+  // placeholders on knockout cards. Built once over all matches.
+  const matchNumberLookup = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const m of matches ?? []) {
+      if (m.api_fixture_id != null && m.match_number != null) {
+        map.set(m.api_fixture_id, m.match_number);
+      }
+    }
+    return map;
+  }, [matches]);
+
   // Group matches by stage
   const stageGroups = useMemo(() => {
     if (!matches) return [];
@@ -275,6 +287,7 @@ export default function MatchListPage() {
                             userId={user!.id}
                             expanded={expandedMatchId === m.id}
                             onToggle={() => toggleMatch(m.id)}
+                            matchNumberLookup={matchNumberLookup}
                           />
                         );
                       })}
