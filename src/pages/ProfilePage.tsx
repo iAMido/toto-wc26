@@ -69,7 +69,7 @@ export default function ProfilePage() {
         { count: groupCount },
         { data: tournamentPred },
       ] = await Promise.all([
-        supabase.from('matches').select('id', { count: 'exact', head: true }),
+        supabase.from('matches').select('id', { count: 'exact', head: true }).not('home_team', 'is', null),
         supabase.from('predictions').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
         supabase.from('predictions').select('points').eq('user_id', user!.id).not('points', 'is', null),
         supabase.from('group_members').select('group_id', { count: 'exact', head: true }).eq('user_id', user!.id),

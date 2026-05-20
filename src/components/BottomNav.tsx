@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 const NAV_ITEMS = [
   { path: '/', icon: '🏠', labelKey: 'nav.home' },
   { path: '/matches', icon: '⚽', labelKey: 'nav.matches' },
+  { path: '/leaderboards', icon: '🏅', labelKey: 'nav.leaderboards' },
   { path: '/groups', icon: '👥', labelKey: 'nav.groups' },
   { path: '/tournament', icon: '🏆', labelKey: 'nav.tournament' },
   { path: '/profile', icon: '👤', labelKey: 'profile.title' },

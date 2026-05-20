@@ -167,19 +167,22 @@ export default function HomePage() {
   const { data: onboarding } = useQuery({
     queryKey: ['onboarding', user?.id],
     queryFn: async () => {
-      const [groupsRes, predsRes, tournRes, matchesRes] = await Promise.all([
+      // Bettable matches = matches whose teams are already known. TBD knockout
+      // slots (home_team IS NULL) are placeholders the user can't predict on
+      // yet, so they shouldn't inflate the 'X matches waiting' count.
+      const [groupsRes, predsRes, tournRes, bettableRes] = await Promise.all([
         supabase.from('group_members').select('group_id', { count: 'exact', head: true }).eq('user_id', user!.id),
         supabase.from('predictions').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
         supabase.from('tournament_predictions').select('champion_team, top_scorer_player_id').eq('user_id', user!.id).maybeSingle(),
-        supabase.from('matches').select('id', { count: 'exact', head: true }),
+        supabase.from('matches').select('id', { count: 'exact', head: true }).not('home_team', 'is', null),
       ]);
 
       const hasGroup = (groupsRes.count ?? 0) > 0;
       const hasChampion = !!tournRes.data?.champion_team;
       const hasScorer = !!tournRes.data?.top_scorer_player_id;
-      const totalMatches = matchesRes.count ?? 0;
+      const totalMatches = bettableRes.count ?? 0;
       const predictedMatches = predsRes.count ?? 0;
-      const unpredicted = totalMatches - predictedMatches;
+      const unpredicted = Math.max(0, totalMatches - predictedMatches);
 
       const steps = [
         { key: 'group', done: hasGroup },
@@ -420,11 +423,8 @@ export default function HomePage() {
           </div>
         )}
 
-        {onboarding && onboarding.pct === 100 && (
-          <div className="bg-primary/10 border border-primary/30 rounded-xl px-4 py-3 text-center">
-            <p className="text-sm text-primary font-medium">{t('onboarding.allDone')}</p>
-          </div>
-        )}
+        {/* When onboarding hits 100%, the entire section disappears — no
+            success banner — so the homepage stops nagging the user. */}
 
         {/* Navigation cards */}
         <div className="space-y-3">
