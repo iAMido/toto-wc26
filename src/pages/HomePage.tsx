@@ -7,6 +7,7 @@ import { useJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
 import InlineMatchCard from '@/components/InlineMatchCard';
 import HowToPlayModal from '@/components/HowToPlayModal';
+import TopStatsCard from '@/components/TopStatsCard';
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
@@ -366,6 +367,9 @@ export default function HomePage() {
             </div>
           </div>
         )}
+
+        {/* Tournament leaders (auto-hides when there are no scorers/assisters yet) */}
+        <TopStatsCard />
 
         {/* Personalized nudge */}
         {onboarding && onboarding.unpredicted > 0 && (
