@@ -98,6 +98,117 @@ export default function AdminPage() {
     staleTime: 30_000,
   });
 
+  /* ---------- Sync log ---------- */
+  const { data: syncLogs } = useQuery({
+    queryKey: ['admin-sync-log'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sync_log')
+        .select('*')
+        .order('ran_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: isAdmin,
+    refetchInterval: 30_000, // poll every 30s so admin sees fresh runs
+  });
+
+  /* ---------- Users (admin RPC; bypasses ordinary RLS) ---------- */
+  const { data: allUsers, isLoading: usersLoading } = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('admin_list_users');
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        email: string | null;
+        display_name: string | null;
+        is_admin: boolean;
+        banned_at: string | null;
+        created_at: string;
+        groups_count: number;
+        match_points: number;
+        predictions_count: number;
+      }>;
+    },
+    enabled: isAdmin,
+    staleTime: 60_000,
+  });
+
+  const setUserState = useMutation({
+    mutationFn: async (p: { user_id: string; banned?: boolean; new_display_name?: string }) => {
+      const { error } = await supabase.rpc('admin_set_user_state', {
+        p_user_id: p.user_id,
+        p_banned: p.banned ?? null,
+        p_new_display_name: p.new_display_name ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-counters'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+    },
+  });
+
+  /* ---------- Match override ---------- */
+  const [overrideMatchNumber, setOverrideMatchNumber] = useState<string>('');
+  const overrideMatchNum = Number(overrideMatchNumber) || 0;
+  const { data: overrideMatch } = useQuery({
+    queryKey: ['admin-match', overrideMatchNum],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('match_number', overrideMatchNum)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin && overrideMatchNum > 0,
+  });
+
+  const [overrideStatus, setOverrideStatus] = useState<string>('FT');
+  const [overrideHome, setOverrideHome] = useState<string>('');
+  const [overrideAway, setOverrideAway] = useState<string>('');
+  const [overrideAdvancer, setOverrideAdvancer] = useState<string>('');
+
+  useEffect(() => {
+    if (overrideMatch) {
+      setOverrideStatus(overrideMatch.status ?? 'FT');
+      setOverrideHome(overrideMatch.home_score_120?.toString() ?? '');
+      setOverrideAway(overrideMatch.away_score_120?.toString() ?? '');
+      setOverrideAdvancer(overrideMatch.advancer_team_id ?? '');
+    }
+  }, [overrideMatch]);
+
+  const saveOverride = useMutation({
+    mutationFn: async () => {
+      if (!overrideMatch) throw new Error('no_match');
+      const { error } = await supabase.rpc('admin_override_match', {
+        p_match_id: overrideMatch.id,
+        p_status: overrideStatus,
+        p_home_score_120: Number(overrideHome),
+        p_away_score_120: Number(overrideAway),
+        p_advancer_team_id: overrideAdvancer || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setActionMsg({ ok: true, text: lang === 'he' ? '✓ המשחק עודכן' : '✓ Match overridden' });
+      queryClient.invalidateQueries({ queryKey: ['admin-match', overrideMatchNum] });
+      queryClient.invalidateQueries({ queryKey: ['matches'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-counters'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+      setTimeout(() => setActionMsg(null), 4000);
+    },
+    onError: (err: Error) => {
+      setActionMsg({ ok: false, text: err.message });
+      setTimeout(() => setActionMsg(null), 5000);
+    },
+  });
+
   /* ============================================================
    * Local form state for tournament results
    * ============================================================ */
@@ -281,6 +392,112 @@ export default function AdminPage() {
           )}
         </div>
 
+        {/* ============ Sync log (latest run + last 10 history) ============ */}
+        <SyncLogCard syncLogs={syncLogs ?? []} lang={lang} />
+
+        {/* ============ Manual match override ============ */}
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+          <h2 className="text-sm font-bold">🛠 {lang === 'he' ? 'התערבות ידנית במשחק' : 'Manual match override'}</h2>
+          <p className="text-[11px] text-muted-foreground">
+            {lang === 'he'
+              ? 'אם API-Football מחזיר תוצאה שגויה, אפשר לתקן כאן. השינוי מפעיל מחדש את חישוב הניקוד.'
+              : 'If API-Football returns corrupt data, fix it here. Triggers the scoring recalculation automatically.'}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-muted-foreground shrink-0">
+              {lang === 'he' ? 'מס׳ משחק:' : 'Match #:'}
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={104}
+              value={overrideMatchNumber}
+              onChange={(e) => setOverrideMatchNumber(e.target.value)}
+              placeholder="1–104"
+              className="w-24 h-10 rounded-xl border border-border bg-muted/50 px-3 text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+
+          {overrideMatch ? (
+            <div className="space-y-3 pt-2 border-t border-border/50">
+              <p className="text-xs">
+                <span className="font-bold">{overrideMatch.home_team ?? '—'}</span>
+                {' vs '}
+                <span className="font-bold">{overrideMatch.away_team ?? '—'}</span>
+                <span className="text-muted-foreground ms-2">
+                  ({new Date(overrideMatch.kickoff_at).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')})
+                </span>
+              </p>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Row label={lang === 'he' ? 'סטטוס' : 'Status'}>
+                  <select
+                    value={overrideStatus}
+                    onChange={(e) => setOverrideStatus(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-border bg-muted/50 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {['NS', '1H', 'HT', '2H', 'ET', 'BT', 'P', 'FT', 'AET', 'PEN', 'PST', 'CANC'].map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </Row>
+                <Row label={lang === 'he' ? 'מנצח פנדלים' : 'PEN winner'}>
+                  <select
+                    value={overrideAdvancer}
+                    onChange={(e) => setOverrideAdvancer(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-border bg-muted/50 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">—</option>
+                    {overrideMatch.home_team && <option value={overrideMatch.home_team}>{overrideMatch.home_team}</option>}
+                    {overrideMatch.away_team && <option value={overrideMatch.away_team}>{overrideMatch.away_team}</option>}
+                  </select>
+                </Row>
+                <Row label={lang === 'he' ? 'בית' : 'Home'}>
+                  <input
+                    type="number" min={0} max={30}
+                    value={overrideHome}
+                    onChange={(e) => setOverrideHome(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-border bg-muted/50 px-3 text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </Row>
+                <Row label={lang === 'he' ? 'חוץ' : 'Away'}>
+                  <input
+                    type="number" min={0} max={30}
+                    value={overrideAway}
+                    onChange={(e) => setOverrideAway(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-border bg-muted/50 px-3 text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </Row>
+              </div>
+
+              <Button
+                onClick={() => saveOverride.mutate()}
+                disabled={saveOverride.isPending || !overrideHome || !overrideAway}
+                className="w-full rounded-xl h-10 font-bold"
+              >
+                {saveOverride.isPending
+                  ? (lang === 'he' ? 'שומר...' : 'Saving...')
+                  : (lang === 'he' ? 'שמור התערבות' : 'Save override')}
+              </Button>
+            </div>
+          ) : overrideMatchNum > 0 ? (
+            <p className="text-[11px] text-muted-foreground">
+              {lang === 'he' ? 'משחק לא נמצא' : 'Match not found'}
+            </p>
+          ) : null}
+        </div>
+
+        {/* ============ User management ============ */}
+        <UserMgmtCard
+          users={allUsers ?? []}
+          loading={usersLoading}
+          lang={lang}
+          currentUserId={user?.id ?? ''}
+          onSetState={(p) => setUserState.mutate(p)}
+          isSaving={setUserState.isPending}
+        />
+
         {/* ============ Tournament results setter ============ */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <h2 className="text-sm font-bold">🏆 {lang === 'he' ? 'תוצאות סופיות של הטורניר' : 'Tournament outright results'}</h2>
@@ -414,6 +631,252 @@ function TeamSelect({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+/* ============================================================
+ * Sync-log card — surfaces the public.sync_log audit trail.
+ * Massive red banner if the newest run failed OR is stale during match hours.
+ * ============================================================ */
+type SyncLogRow = {
+  id: string;
+  ran_at: string;
+  duration_ms: number | null;
+  status: 'ok' | 'partial' | 'error';
+  detail: Record<string, unknown>;
+  api_calls: number;
+  fixtures_updated: number;
+  scorers_updated: number;
+  assisters_updated: number;
+  knockouts_resolved: number;
+};
+
+function SyncLogCard({ syncLogs, lang }: { syncLogs: SyncLogRow[]; lang: string }) {
+  const latest = syncLogs[0];
+  const stale = latest
+    ? Date.now() - new Date(latest.ran_at).getTime() > 30 * 60_000 // >30 min ago
+    : true;
+  const utcHour = new Date().getUTCHours();
+  const inMatchHours = utcHour >= 10 || utcHour <= 2; // matches the cron window
+  const showRedAlert = !latest
+    || latest.status === 'error'
+    || (stale && inMatchHours);
+
+  const statusBadge = (s: SyncLogRow['status']) => {
+    const cls =
+      s === 'ok' ? 'bg-emerald-900/40 text-emerald-300 border-emerald-700/40'
+      : s === 'partial' ? 'bg-amber-900/40 text-amber-300 border-amber-700/40'
+      : 'bg-destructive/30 text-destructive border-destructive/50';
+    return (
+      <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${cls}`}>
+        {s}
+      </span>
+    );
+  };
+
+  return (
+    <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold">📡 {lang === 'he' ? 'יומן סנכרון' : 'Sync log'}</h2>
+        {latest && statusBadge(latest.status)}
+      </div>
+
+      {showRedAlert && (
+        <div className="bg-destructive/15 border border-destructive/40 rounded-xl p-3 text-destructive text-xs font-bold flex items-start gap-2">
+          <span>⚠️</span>
+          <span>
+            {!latest
+              ? (lang === 'he' ? 'אין רישומי סנכרון. ה-cron אולי לא רץ.' : 'No sync runs recorded — cron may not be running.')
+              : latest.status === 'error'
+                ? (lang === 'he' ? 'הריצה האחרונה נכשלה במלואה. API-Football אולי לא זמין.' : 'Last sync run failed completely — API-Football may be down.')
+                : (lang === 'he' ? 'אין סנכרון תקין בחצי שעה האחרונה ויש משחקים פעילים.' : 'No successful sync in the last 30 min during match hours.')}
+          </span>
+        </div>
+      )}
+
+      {syncLogs.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {lang === 'he' ? 'אין נתונים עדיין.' : 'No data yet.'}
+        </p>
+      ) : (
+        <div className="space-y-1">
+          {/* Header */}
+          <div className="grid grid-cols-[1fr_3rem_3rem_3rem] gap-1 text-[9px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border pb-1">
+            <span>{lang === 'he' ? 'זמן' : 'When'}</span>
+            <span className="text-center">API</span>
+            <span className="text-center">{lang === 'he' ? 'תוצ׳' : 'Fix'}</span>
+            <span className="text-center">{lang === 'he' ? 'משך' : 'Ms'}</span>
+          </div>
+          {syncLogs.map((r) => (
+            <div
+              key={r.id}
+              className={`grid grid-cols-[1fr_3rem_3rem_3rem] gap-1 items-center text-[11px] py-1 tabular-nums ${
+                r.status === 'error' ? 'text-destructive'
+                : r.status === 'partial' ? 'text-amber-300'
+                : ''
+              }`}
+            >
+              <span className="truncate">
+                {new Date(r.ran_at).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US', {
+                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                })}
+                {' '}
+                {statusBadge(r.status)}
+              </span>
+              <span className="text-center">{r.api_calls}</span>
+              <span className="text-center">{r.fixtures_updated}</span>
+              <span className="text-center">{r.duration_ms ?? '—'}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+ * User-management card — list, edit display_name, toggle ban.
+ * ============================================================ */
+type AdminUser = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  is_admin: boolean;
+  banned_at: string | null;
+  created_at: string;
+  groups_count: number;
+  match_points: number;
+  predictions_count: number;
+};
+
+function UserMgmtCard({
+  users, loading, lang, currentUserId, onSetState, isSaving,
+}: {
+  users: AdminUser[];
+  loading: boolean;
+  lang: string;
+  currentUserId: string;
+  onSetState: (p: { user_id: string; banned?: boolean; new_display_name?: string }) => void;
+  isSaving: boolean;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState('');
+
+  return (
+    <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+      <h2 className="text-sm font-bold">👥 {lang === 'he' ? 'ניהול משתמשים' : 'User management'}</h2>
+
+      {loading ? (
+        <p className="text-xs text-muted-foreground">{lang === 'he' ? 'טוען...' : 'Loading...'}</p>
+      ) : users.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {lang === 'he' ? 'אין משתמשים עדיין.' : 'No users yet.'}
+        </p>
+      ) : (
+        <div className="space-y-1.5">
+          {users.map((u) => {
+            const isSelf = u.id === currentUserId;
+            const isBanned = !!u.banned_at;
+            const isEditingThis = editingId === u.id;
+            return (
+              <div
+                key={u.id}
+                className={`rounded-lg border p-2 space-y-1.5 ${
+                  isBanned ? 'border-destructive/40 bg-destructive/5'
+                  : isSelf ? 'border-primary/30 bg-primary/5'
+                  : 'border-border/50 bg-muted/20'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {/* Name (or inline edit) */}
+                  {isEditingThis ? (
+                    <input
+                      value={draftName}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && draftName.trim().length >= 2) {
+                          onSetState({ user_id: u.id, new_display_name: draftName });
+                          setEditingId(null);
+                        } else if (e.key === 'Escape') {
+                          setEditingId(null);
+                        }
+                      }}
+                      className="flex-1 h-7 rounded border border-border bg-muted/50 px-2 text-xs"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="flex-1 text-sm font-bold truncate">
+                      {u.display_name ?? '—'}
+                      {u.is_admin && <span className="text-[9px] text-amber-300 ms-1.5 font-black">[ADMIN]</span>}
+                      {isBanned && <span className="text-[9px] text-destructive ms-1.5 font-black">[BANNED]</span>}
+                      {isSelf && <span className="text-[9px] text-primary ms-1.5">({lang === 'he' ? 'אני' : 'you'})</span>}
+                    </span>
+                  )}
+
+                  {/* Edit/ban controls (hidden for self to avoid self-pwn) */}
+                  {!isSelf && !isEditingThis && (
+                    <>
+                      <button
+                        onClick={() => { setEditingId(u.id); setDraftName(u.display_name ?? ''); }}
+                        className="text-[10px] text-primary hover:underline px-1"
+                      >
+                        ✏
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(
+                            isBanned
+                              ? (lang === 'he' ? 'לבטל חסימה?' : 'Unban this user?')
+                              : (lang === 'he' ? `לחסום את ${u.display_name ?? u.email}?` : `Ban ${u.display_name ?? u.email}?`)
+                          )) {
+                            onSetState({ user_id: u.id, banned: !isBanned });
+                          }
+                        }}
+                        disabled={isSaving}
+                        className={`text-[10px] px-1.5 py-0.5 rounded ${
+                          isBanned
+                            ? 'text-emerald-300 hover:bg-emerald-900/20'
+                            : 'text-destructive hover:bg-destructive/10'
+                        }`}
+                      >
+                        {isBanned ? (lang === 'he' ? 'בטל חסימה' : 'Unban') : (lang === 'he' ? 'חסום' : 'Ban')}
+                      </button>
+                    </>
+                  )}
+                  {isEditingThis && (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (draftName.trim().length >= 2) {
+                            onSetState({ user_id: u.id, new_display_name: draftName });
+                            setEditingId(null);
+                          }
+                        }}
+                        className="text-[10px] text-primary px-1"
+                      >
+                        ✓
+                      </button>
+                      <button onClick={() => setEditingId(null)} className="text-[10px] text-muted-foreground px-1">
+                        ✕
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <span dir="ltr" className="truncate">{u.email ?? '—'}</span>
+                  <span className="ms-auto tabular-nums shrink-0">
+                    {u.match_points} {lang === 'he' ? 'נק׳' : 'pts'} ·
+                    {' '}{u.predictions_count} {lang === 'he' ? 'ניחושים' : 'preds'} ·
+                    {' '}{u.groups_count} {lang === 'he' ? 'קבוצות' : 'groups'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
