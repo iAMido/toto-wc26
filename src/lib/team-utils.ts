@@ -15,7 +15,7 @@ const TEAM_DATA: Record<string, { flag: string; code: string; iso2: string; he: 
   'Canada':                   { flag: '🇨🇦', code: 'CAN', iso2: 'ca', he: 'קנדה' },
   'Switzerland':              { flag: '🇨🇭', code: 'SUI', iso2: 'ch', he: 'שוויץ' },
   'Qatar':                    { flag: '🇶🇦', code: 'QAT', iso2: 'qa', he: 'קטאר' },
-  'Bosnia and Herzegovina':   { flag: '🇧🇦', code: 'BIH', iso2: 'ba', he: 'בוסניה והרצגובינה' },
+  'Bosnia and Herzegovina':   { flag: '🇧🇦', code: 'BIH', iso2: 'ba', he: 'בוסניה' },
   // ----- Group C -----
   'Brazil':                   { flag: '🇧🇷', code: 'BRA', iso2: 'br', he: 'ברזיל' },
   'Morocco':                  { flag: '🇲🇦', code: 'MAR', iso2: 'ma', he: 'מרוקו' },
@@ -25,7 +25,7 @@ const TEAM_DATA: Record<string, { flag: string; code: string; iso2: string; he: 
   'United States':            { flag: '🇺🇸', code: 'USA', iso2: 'us', he: 'ארה״ב' },
   'Paraguay':                 { flag: '🇵🇾', code: 'PAR', iso2: 'py', he: 'פרגוואי' },
   'Australia':                { flag: '🇦🇺', code: 'AUS', iso2: 'au', he: 'אוסטרליה' },
-  'Türkiye':                  { flag: '🇹🇷', code: 'TUR', iso2: 'tr', he: 'טורקיה' },
+  'Türkiye':                  { flag: '🇹🇷', code: 'TUR', iso2: 'tr', he: 'תורכיה' },
   // ----- Group E -----
   'Germany':                  { flag: '🇩🇪', code: 'GER', iso2: 'de', he: 'גרמניה' },
   'Curaçao':                  { flag: '🇨🇼', code: 'CUW', iso2: 'cw', he: 'קוראסאו' },
@@ -43,7 +43,7 @@ const TEAM_DATA: Record<string, { flag: string; code: string; iso2: string; he: 
   'New Zealand':              { flag: '🇳🇿', code: 'NZL', iso2: 'nz', he: 'ניו זילנד' },
   // ----- Group H -----
   'Spain':                    { flag: '🇪🇸', code: 'ESP', iso2: 'es', he: 'ספרד' },
-  'Cabo Verde':               { flag: '🇨🇻', code: 'CPV', iso2: 'cv', he: 'כף ורדה' },
+  'Cabo Verde':               { flag: '🇨🇻', code: 'CPV', iso2: 'cv', he: 'קאבו ורדה' },
   'Saudi Arabia':             { flag: '🇸🇦', code: 'KSA', iso2: 'sa', he: 'ערב הסעודית' },
   'Uruguay':                  { flag: '🇺🇾', code: 'URU', iso2: 'uy', he: 'אורוגוואי' },
   // ----- Group I -----
@@ -60,7 +60,7 @@ const TEAM_DATA: Record<string, { flag: string; code: string; iso2: string; he: 
   'Portugal':                 { flag: '🇵🇹', code: 'POR', iso2: 'pt', he: 'פורטוגל' },
   'Uzbekistan':               { flag: '🇺🇿', code: 'UZB', iso2: 'uz', he: 'אוזבקיסטן' },
   'Colombia':                 { flag: '🇨🇴', code: 'COL', iso2: 'co', he: 'קולומביה' },
-  'Congo DR':                 { flag: '🇨🇩', code: 'COD', iso2: 'cd', he: 'קונגו (DR)' },
+  'Congo DR':                 { flag: '🇨🇩', code: 'COD', iso2: 'cd', he: 'קונגו הדמוקרטית' },
   // ----- Group L -----
   'England':                  { flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', code: 'ENG', iso2: 'gb-eng', he: 'אנגליה' },
   'Croatia':                  { flag: '🇭🇷', code: 'CRO', iso2: 'hr', he: 'קרואטיה' },
