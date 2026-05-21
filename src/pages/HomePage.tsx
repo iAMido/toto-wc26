@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import InlineMatchCard from '@/components/InlineMatchCard';
 import HowToPlayModal from '@/components/HowToPlayModal';
 import TopStatsCard from '@/components/TopStatsCard';
+import InstallPrompt from '@/components/InstallPrompt';
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
@@ -368,6 +369,10 @@ export default function HomePage() {
             </div>
           </div>
         )}
+
+        {/* Install-this-app prompt: native button on Android, instructions
+            on iOS, hidden when already installed or dismissed by the user. */}
+        <InstallPrompt />
 
         {/* Tournament leaders (auto-hides when there are no scorers/assisters yet) */}
         <TopStatsCard />
