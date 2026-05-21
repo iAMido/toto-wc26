@@ -306,6 +306,34 @@ export default function AdminPage() {
     },
   });
 
+  // Auto-promote tournament outright results (champion / runner-up / top
+  // scorer / top assister). Trigger fires automatically on the final game's
+  // status flip, but admin can re-run any time (e.g. after late-arriving
+  // top-scorer stats from API-Football).
+  const runPromote = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('promote_tournament_results');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      setActionMsg({
+        ok: true,
+        text: lang === 'he'
+          ? `✓ תוצאות הטורניר עודכנו: ${JSON.stringify(data)}`
+          : `✓ Tournament results promoted: ${JSON.stringify(data)}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-tournament'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-counters'] });
+      setTimeout(() => setActionMsg(null), 6000);
+    },
+    onError: (err: Error) => {
+      setActionMsg({ ok: false, text: `Promote failed: ${err.message}` });
+      setTimeout(() => setActionMsg(null), 5000);
+    },
+  });
+
   /* ============================================================
    * Render
    * ============================================================ */
@@ -382,6 +410,18 @@ export default function AdminPage() {
                 : (lang === 'he' ? 'פתור נוקאאוט' : 'Resolve bracket')}
             </Button>
           </div>
+          {/* Auto-promote outrights — runs automatically on M104 status flip
+              via DB trigger; this button lets admin re-run on demand. */}
+          <Button
+            variant="outline"
+            onClick={() => runPromote.mutate()}
+            disabled={runPromote.isPending}
+            className="w-full rounded-xl h-11 font-bold"
+          >
+            🏆 {runPromote.isPending
+              ? (lang === 'he' ? 'מקדם...' : 'Promoting...')
+              : (lang === 'he' ? 'קדם תוצאות טורניר אוטומטית' : 'Auto-promote tournament results')}
+          </Button>
           {actionMsg && (
             <p
               className={`text-[11px] break-words font-mono ${actionMsg.ok ? 'text-primary' : 'text-destructive'}`}

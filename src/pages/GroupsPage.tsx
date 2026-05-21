@@ -35,6 +35,10 @@ export default function GroupsPage() {
 
   const createGroup = useMutation({
     mutationFn: async (name: string) => {
+      // The auto_join_group_creator trigger on public.groups inserts the
+      // matching group_members row in the same transaction, so the
+      // creator is a member by the time RETURNING evaluates the SELECT
+      // policy. No second client-side insert needed.
       const code = generateInviteCode();
       const { data: group, error: groupErr } = await supabase
         .from('groups')
@@ -42,10 +46,6 @@ export default function GroupsPage() {
         .select()
         .single();
       if (groupErr) throw groupErr;
-      const { error: memberErr } = await supabase
-        .from('group_members')
-        .insert({ group_id: group.id, user_id: user!.id });
-      if (memberErr) throw memberErr;
       return group;
     },
     onSuccess: (group) => {
