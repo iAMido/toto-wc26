@@ -149,7 +149,16 @@ export function getPlaceholderLabel(
     return he ? `2° בית ${runnerMatch[1]}` : `2nd Group ${runnerMatch[1]}`;
   }
 
-  // THIRD_<letters>  e.g. THIRD_CDEF
+  // THIRD_RANK_<n>  — resolved by the official matrix once all 72 group
+  // games are FT. Until then, the user sees a generic "best 3rd-placer"
+  // label since the exact group is determined dynamically post-resolution.
+  const thirdRankMatch = placeholder.match(/^THIRD_RANK_([1-8])$/);
+  if (thirdRankMatch) {
+    return he ? 'מקום 3 הטוב ביותר' : 'Best 3rd-placer';
+  }
+
+  // Legacy THIRD_<letters>  e.g. THIRD_CDEF (kept for backward compat;
+  // no rows use this format after migration 0016)
   const thirdMatch = placeholder.match(/^THIRD_([A-L]+)$/);
   if (thirdMatch) {
     const letters = thirdMatch[1].split('').join('/');
