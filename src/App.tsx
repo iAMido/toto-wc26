@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RtlProvider } from '@/i18n/RtlProvider';
 import BottomNav from '@/components/BottomNav';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import LoginPage from '@/pages/LoginPage';
 import HomePage from '@/pages/HomePage';
 import GroupsPage from '@/pages/GroupsPage';
@@ -61,13 +62,15 @@ function AppRoutes() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <RtlProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </RtlProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <RtlProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </RtlProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
