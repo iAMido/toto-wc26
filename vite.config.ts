@@ -10,9 +10,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'robots.txt'],
       manifest: {
-        name: 'Toto WC26',
-        short_name: 'TotoWC26',
-        description: 'World Cup 2026 prediction game for private social groups.',
+        // Bilingual: longer Hebrew name as primary, English short_name as fallback
+        // for OSes that truncate. iOS Safari's home-screen label uses short_name.
+        name: 'טוטו מונדיאל 26',
+        short_name: 'Toto WC26',
+        description: 'משחק ניחושים חברתי למונדיאל 2026 — בקבוצות פרטיות עם החברים.',
         theme_color: '#0a1f14',
         background_color: '#0a1f14',
         display: 'standalone',
@@ -21,21 +23,22 @@ export default defineConfig({
         scope: '/',
         lang: 'he',
         dir: 'rtl',
+        categories: ['sports', 'games', 'social'],
+        // SVG icon is universally supported by modern PWA installers (Android
+        // Chrome 79+, iOS Safari 15+, Edge, desktop Chrome). The 'any' purpose
+        // means it works for the launcher icon; we also declare a maskable
+        // variant so Android can crop it into its adaptive shape.
         icons: [
           {
-            src: '/pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
+            src: '/favicon.svg',
+            type: 'image/svg+xml',
+            sizes: 'any',
+            purpose: 'any',
           },
           {
-            src: '/pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
-          {
-            src: '/pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: '/favicon.svg',
+            type: 'image/svg+xml',
+            sizes: 'any',
             purpose: 'maskable',
           },
         ],

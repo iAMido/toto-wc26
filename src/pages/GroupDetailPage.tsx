@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import GroupMatchFeed from '@/components/GroupMatchFeed';
 
 export default function GroupDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading } = useRequireAuth();
   const navigate = useNavigate();
@@ -93,6 +93,34 @@ export default function GroupDetailPage() {
     setTimeout(() => setCodeCopied(false), 2000);
   };
 
+  // One-tap shareable URL. Prefer the Web Share API on mobile (opens the OS
+  // share sheet — Telegram, WhatsApp, etc.); fall back to clipboard copy.
+  const [linkCopied, setLinkCopied] = useState(false);
+  const inviteUrl = group ? `${window.location.origin}/join/${group.invite_code}` : '';
+  const shareInviteLink = async () => {
+    if (!group) return;
+    const shareText = i18n.language === 'he'
+      ? `הצטרף ל-${group.name} בטוטו מונדיאל 26: ${inviteUrl}`
+      : `Join ${group.name} on Toto WC26: ${inviteUrl}`;
+
+    if (typeof navigator !== 'undefined' && 'share' in navigator) {
+      try {
+        await (navigator as Navigator & { share: (data: ShareData) => Promise<void> }).share({
+          title: group.name,
+          text: shareText,
+          url: inviteUrl,
+        });
+        return; // share sheet handled it
+      } catch {
+        // User cancelled or share unavailable — fall through to clipboard
+      }
+    }
+
+    try { await navigator.clipboard.writeText(inviteUrl); } catch { /* ignore */ }
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
   if (authLoading || groupLoading || membersLoading) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center">
@@ -134,19 +162,30 @@ export default function GroupDetailPage() {
           <h1 className="text-xl font-bold">{group.name}</h1>
         </div>
 
-        {/* Invite Code */}
-        <div className="bg-card rounded-2xl border border-border p-4">
-          <div className="flex items-center justify-between">
-            <div>
+        {/* Invite — primary CTA is a one-tap share link, code is the fallback */}
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">{t('groups.inviteCode')}</p>
-              <p className="text-2xl font-mono font-bold tracking-widest text-primary">
+              <p className="text-2xl font-mono font-bold tracking-widest text-primary truncate">
                 {group.invite_code}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={copyInviteCode} className="rounded-xl">
+            <Button variant="outline" size="sm" onClick={copyInviteCode} className="rounded-xl shrink-0">
               {codeCopied ? t('groups.copied') : t('groups.shareCode')}
             </Button>
           </div>
+          <Button
+            onClick={shareInviteLink}
+            className="w-full rounded-xl h-11 font-bold"
+          >
+            🔗 {linkCopied
+              ? (i18n.language === 'he' ? '✓ הקישור הועתק' : '✓ Link copied')
+              : (i18n.language === 'he' ? 'שתף קישור הזמנה' : 'Share invite link')}
+          </Button>
+          <p className="text-[10px] text-muted-foreground text-center break-all" dir="ltr">
+            {inviteUrl}
+          </p>
         </div>
 
         {/* Match Feed */}
