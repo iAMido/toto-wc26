@@ -1,69 +1,71 @@
 /** Country flag emojis, short codes, and ISO 3166-1 alpha-2 codes (for SVG flags) */
 
+// Canonical team names match the FIFA WC2026 spelling exactly (so the
+// matches table can use these as the team_name without any translation
+// layer). Renamed since v1: USA→United States, South Korea→Korea Republic,
+// Czech Republic→Czechia, Turkey→Türkiye, Curacao→Curaçao. Added 5 new teams
+// (South Africa, Bosnia and Herzegovina, Côte d'Ivoire, Cabo Verde, Congo DR).
 const TEAM_DATA: Record<string, { flag: string; code: string; iso2: string; he: string }> = {
-  // Group A
-  'Morocco':       { flag: '🇲🇦', code: 'MAR', iso2: 'ma', he: 'מרוקו' },
-  'USA':           { flag: '🇺🇸', code: 'USA', iso2: 'us', he: 'ארה״ב' },
-  'Mexico':        { flag: '🇲🇽', code: 'MEX', iso2: 'mx', he: 'מקסיקו' },
-  'Canada':        { flag: '🇨🇦', code: 'CAN', iso2: 'ca', he: 'קנדה' },
-  // Group B
-  'Argentina':     { flag: '🇦🇷', code: 'ARG', iso2: 'ar', he: 'ארגנטינה' },
-  'Brazil':        { flag: '🇧🇷', code: 'BRA', iso2: 'br', he: 'ברזיל' },
-  'Colombia':      { flag: '🇨🇴', code: 'COL', iso2: 'co', he: 'קולומביה' },
-  'Uruguay':       { flag: '🇺🇾', code: 'URU', iso2: 'uy', he: 'אורוגוואי' },
-  // Group C
-  'France':        { flag: '🇫🇷', code: 'FRA', iso2: 'fr', he: 'צרפת' },
-  'Germany':       { flag: '🇩🇪', code: 'GER', iso2: 'de', he: 'גרמניה' },
-  'Spain':         { flag: '🇪🇸', code: 'ESP', iso2: 'es', he: 'ספרד' },
-  'Portugal':      { flag: '🇵🇹', code: 'POR', iso2: 'pt', he: 'פורטוגל' },
-  // Group D
-  'England':       { flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', code: 'ENG', iso2: 'gb-eng', he: 'אנגליה' },
-  'Netherlands':   { flag: '🇳🇱', code: 'NED', iso2: 'nl', he: 'הולנד' },
-  'Belgium':       { flag: '🇧🇪', code: 'BEL', iso2: 'be', he: 'בלגיה' },
-  'Italy':         { flag: '🇮🇹', code: 'ITA', iso2: 'it', he: 'איטליה' },
-  // Other teams
-  'Croatia':       { flag: '🇭🇷', code: 'CRO', iso2: 'hr', he: 'קרואטיה' },
-  'Denmark':       { flag: '🇩🇰', code: 'DEN', iso2: 'dk', he: 'דנמרק' },
-  'Switzerland':   { flag: '🇨🇭', code: 'SUI', iso2: 'ch', he: 'שוויץ' },
-  'Serbia':        { flag: '🇷🇸', code: 'SRB', iso2: 'rs', he: 'סרביה' },
-  'Japan':         { flag: '🇯🇵', code: 'JPN', iso2: 'jp', he: 'יפן' },
-  'South Korea':   { flag: '🇰🇷', code: 'KOR', iso2: 'kr', he: 'דרום קוריאה' },
-  'Australia':     { flag: '🇦🇺', code: 'AUS', iso2: 'au', he: 'אוסטרליה' },
-  'Saudi Arabia':  { flag: '🇸🇦', code: 'KSA', iso2: 'sa', he: 'ערב הסעודית' },
-  'Iran':          { flag: '🇮🇷', code: 'IRN', iso2: 'ir', he: 'איראן' },
-  'Qatar':         { flag: '🇶🇦', code: 'QAT', iso2: 'qa', he: 'קטאר' },
-  'Ecuador':       { flag: '🇪🇨', code: 'ECU', iso2: 'ec', he: 'אקוודור' },
-  'Paraguay':      { flag: '🇵🇾', code: 'PAR', iso2: 'py', he: 'פרגוואי' },
-  'Chile':         { flag: '🇨🇱', code: 'CHI', iso2: 'cl', he: 'צ׳ילה' },
-  'Peru':          { flag: '🇵🇪', code: 'PER', iso2: 'pe', he: 'פרו' },
-  'Venezuela':     { flag: '🇻🇪', code: 'VEN', iso2: 've', he: 'ונצואלה' },
-  'Bolivia':       { flag: '🇧🇴', code: 'BOL', iso2: 'bo', he: 'בוליביה' },
-  'Poland':        { flag: '🇵🇱', code: 'POL', iso2: 'pl', he: 'פולין' },
-  'Ukraine':       { flag: '🇺🇦', code: 'UKR', iso2: 'ua', he: 'אוקראינה' },
-  'Turkey':        { flag: '🇹🇷', code: 'TUR', iso2: 'tr', he: 'טורקיה' },
-  'Austria':       { flag: '🇦🇹', code: 'AUT', iso2: 'at', he: 'אוסטריה' },
-  'Czech Republic':{ flag: '🇨🇿', code: 'CZE', iso2: 'cz', he: 'צ׳כיה' },
-  'Scotland':      { flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', code: 'SCO', iso2: 'gb-sct', he: 'סקוטלנד' },
-  'Wales':         { flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', code: 'WAL', iso2: 'gb-wls', he: 'וויילס' },
-  'Norway':        { flag: '🇳🇴', code: 'NOR', iso2: 'no', he: 'נורבגיה' },
-  'Sweden':        { flag: '🇸🇪', code: 'SWE', iso2: 'se', he: 'שוודיה' },
-  'Ghana':         { flag: '🇬🇭', code: 'GHA', iso2: 'gh', he: 'גאנה' },
-  'Senegal':       { flag: '🇸🇳', code: 'SEN', iso2: 'sn', he: 'סנגל' },
-  'Cameroon':      { flag: '🇨🇲', code: 'CMR', iso2: 'cm', he: 'קמרון' },
-  'Nigeria':       { flag: '🇳🇬', code: 'NGA', iso2: 'ng', he: 'ניגריה' },
-  'Egypt':         { flag: '🇪🇬', code: 'EGY', iso2: 'eg', he: 'מצרים' },
-  'Tunisia':       { flag: '🇹🇳', code: 'TUN', iso2: 'tn', he: 'תוניסיה' },
-  'Algeria':       { flag: '🇩🇿', code: 'ALG', iso2: 'dz', he: 'אלג׳יריה' },
-  'Costa Rica':    { flag: '🇨🇷', code: 'CRC', iso2: 'cr', he: 'קוסטה ריקה' },
-  'Honduras':      { flag: '🇭🇳', code: 'HON', iso2: 'hn', he: 'הונדורס' },
-  'Jamaica':       { flag: '🇯🇲', code: 'JAM', iso2: 'jm', he: 'ג׳מייקה' },
-  'Panama':        { flag: '🇵🇦', code: 'PAN', iso2: 'pa', he: 'פנמה' },
-  'Haiti':         { flag: '🇭🇹', code: 'HAI', iso2: 'ht', he: 'האיטי' },
-  'Curacao':       { flag: '🇨🇼', code: 'CUW', iso2: 'cw', he: 'קוראסאו' },
-  'Uzbekistan':    { flag: '🇺🇿', code: 'UZB', iso2: 'uz', he: 'אוזבקיסטן' },
-  'Iraq':          { flag: '🇮🇶', code: 'IRQ', iso2: 'iq', he: 'עיראק' },
-  'Jordan':        { flag: '🇯🇴', code: 'JOR', iso2: 'jo', he: 'ירדן' },
-  'New Zealand':   { flag: '🇳🇿', code: 'NZL', iso2: 'nz', he: 'ניו זילנד' },
+  // ----- Group A -----
+  'Mexico':                   { flag: '🇲🇽', code: 'MEX', iso2: 'mx', he: 'מקסיקו' },
+  'South Africa':             { flag: '🇿🇦', code: 'RSA', iso2: 'za', he: 'דרום אפריקה' },
+  'Korea Republic':           { flag: '🇰🇷', code: 'KOR', iso2: 'kr', he: 'דרום קוריאה' },
+  'Czechia':                  { flag: '🇨🇿', code: 'CZE', iso2: 'cz', he: 'צ׳כיה' },
+  // ----- Group B -----
+  'Canada':                   { flag: '🇨🇦', code: 'CAN', iso2: 'ca', he: 'קנדה' },
+  'Switzerland':              { flag: '🇨🇭', code: 'SUI', iso2: 'ch', he: 'שוויץ' },
+  'Qatar':                    { flag: '🇶🇦', code: 'QAT', iso2: 'qa', he: 'קטאר' },
+  'Bosnia and Herzegovina':   { flag: '🇧🇦', code: 'BIH', iso2: 'ba', he: 'בוסניה והרצגובינה' },
+  // ----- Group C -----
+  'Brazil':                   { flag: '🇧🇷', code: 'BRA', iso2: 'br', he: 'ברזיל' },
+  'Morocco':                  { flag: '🇲🇦', code: 'MAR', iso2: 'ma', he: 'מרוקו' },
+  'Haiti':                    { flag: '🇭🇹', code: 'HAI', iso2: 'ht', he: 'האיטי' },
+  'Scotland':                 { flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', code: 'SCO', iso2: 'gb-sct', he: 'סקוטלנד' },
+  // ----- Group D -----
+  'United States':            { flag: '🇺🇸', code: 'USA', iso2: 'us', he: 'ארה״ב' },
+  'Paraguay':                 { flag: '🇵🇾', code: 'PAR', iso2: 'py', he: 'פרגוואי' },
+  'Australia':                { flag: '🇦🇺', code: 'AUS', iso2: 'au', he: 'אוסטרליה' },
+  'Türkiye':                  { flag: '🇹🇷', code: 'TUR', iso2: 'tr', he: 'טורקיה' },
+  // ----- Group E -----
+  'Germany':                  { flag: '🇩🇪', code: 'GER', iso2: 'de', he: 'גרמניה' },
+  'Curaçao':                  { flag: '🇨🇼', code: 'CUW', iso2: 'cw', he: 'קוראסאו' },
+  "Côte d'Ivoire":            { flag: '🇨🇮', code: 'CIV', iso2: 'ci', he: 'חוף השנהב' },
+  'Ecuador':                  { flag: '🇪🇨', code: 'ECU', iso2: 'ec', he: 'אקוודור' },
+  // ----- Group F -----
+  'Netherlands':              { flag: '🇳🇱', code: 'NED', iso2: 'nl', he: 'הולנד' },
+  'Japan':                    { flag: '🇯🇵', code: 'JPN', iso2: 'jp', he: 'יפן' },
+  'Tunisia':                  { flag: '🇹🇳', code: 'TUN', iso2: 'tn', he: 'תוניסיה' },
+  'Sweden':                   { flag: '🇸🇪', code: 'SWE', iso2: 'se', he: 'שוודיה' },
+  // ----- Group G -----
+  'Belgium':                  { flag: '🇧🇪', code: 'BEL', iso2: 'be', he: 'בלגיה' },
+  'Egypt':                    { flag: '🇪🇬', code: 'EGY', iso2: 'eg', he: 'מצרים' },
+  'Iran':                     { flag: '🇮🇷', code: 'IRN', iso2: 'ir', he: 'איראן' },
+  'New Zealand':              { flag: '🇳🇿', code: 'NZL', iso2: 'nz', he: 'ניו זילנד' },
+  // ----- Group H -----
+  'Spain':                    { flag: '🇪🇸', code: 'ESP', iso2: 'es', he: 'ספרד' },
+  'Cabo Verde':               { flag: '🇨🇻', code: 'CPV', iso2: 'cv', he: 'כף ורדה' },
+  'Saudi Arabia':             { flag: '🇸🇦', code: 'KSA', iso2: 'sa', he: 'ערב הסעודית' },
+  'Uruguay':                  { flag: '🇺🇾', code: 'URU', iso2: 'uy', he: 'אורוגוואי' },
+  // ----- Group I -----
+  'France':                   { flag: '🇫🇷', code: 'FRA', iso2: 'fr', he: 'צרפת' },
+  'Senegal':                  { flag: '🇸🇳', code: 'SEN', iso2: 'sn', he: 'סנגל' },
+  'Norway':                   { flag: '🇳🇴', code: 'NOR', iso2: 'no', he: 'נורבגיה' },
+  'Iraq':                     { flag: '🇮🇶', code: 'IRQ', iso2: 'iq', he: 'עיראק' },
+  // ----- Group J -----
+  'Argentina':                { flag: '🇦🇷', code: 'ARG', iso2: 'ar', he: 'ארגנטינה' },
+  'Algeria':                  { flag: '🇩🇿', code: 'ALG', iso2: 'dz', he: 'אלג׳יריה' },
+  'Austria':                  { flag: '🇦🇹', code: 'AUT', iso2: 'at', he: 'אוסטריה' },
+  'Jordan':                   { flag: '🇯🇴', code: 'JOR', iso2: 'jo', he: 'ירדן' },
+  // ----- Group K -----
+  'Portugal':                 { flag: '🇵🇹', code: 'POR', iso2: 'pt', he: 'פורטוגל' },
+  'Uzbekistan':               { flag: '🇺🇿', code: 'UZB', iso2: 'uz', he: 'אוזבקיסטן' },
+  'Colombia':                 { flag: '🇨🇴', code: 'COL', iso2: 'co', he: 'קולומביה' },
+  'Congo DR':                 { flag: '🇨🇩', code: 'COD', iso2: 'cd', he: 'קונגו (DR)' },
+  // ----- Group L -----
+  'England':                  { flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', code: 'ENG', iso2: 'gb-eng', he: 'אנגליה' },
+  'Croatia':                  { flag: '🇭🇷', code: 'CRO', iso2: 'hr', he: 'קרואטיה' },
+  'Ghana':                    { flag: '🇬🇭', code: 'GHA', iso2: 'gh', he: 'גאנה' },
+  'Panama':                   { flag: '🇵🇦', code: 'PAN', iso2: 'pa', he: 'פנמה' },
 };
 
 /** ISO 3166-1 alpha-2 code (or sub-region like gb-eng) for use with flag-icons CSS. */
