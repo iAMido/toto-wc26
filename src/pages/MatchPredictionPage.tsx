@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { getTeamName } from '@/lib/team-utils';
 import TeamFlag from '@/components/TeamFlag';
+import Chevron from '@/components/Chevron';
 
 /* ---------- constants ---------- */
 
@@ -183,7 +184,7 @@ export default function MatchPredictionPage() {
         {/* Back nav */}
         <div className="flex items-center pt-4">
           <Link to="/matches" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← {t('common.back')}
+            <Chevron direction="back" className="inline" /> {t('common.back')}
           </Link>
         </div>
 

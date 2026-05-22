@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { Button } from '@/components/ui/button';
+import Chevron from '@/components/Chevron';
 
 /**
  * Floating card on HomePage that nudges the user to install the PWA.
@@ -68,7 +69,7 @@ function AndroidContent({ he, onInstall }: { he: boolean; onInstall: () => Promi
         onClick={onInstall}
         className="rounded-xl h-9 px-4 text-xs font-bold"
       >
-        {he ? 'התקן ←' : 'Install →'}
+        {he ? 'התקן' : 'Install'} <Chevron direction="forward" className="inline" />
       </Button>
     </>
   );

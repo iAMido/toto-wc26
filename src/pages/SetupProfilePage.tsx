@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Chevron from '@/components/Chevron';
 
 const PENDING_INVITE_KEY = 'pendingInviteCode';
 
@@ -156,7 +157,7 @@ export default function SetupProfilePage() {
         >
           {saving
             ? (lang === 'he' ? 'שומר...' : 'Saving...')
-            : (lang === 'he' ? 'בואו נתחיל ←' : "Let's go →")}
+            : (<>{lang === 'he' ? 'בואו נתחיל' : "Let's go"} <Chevron direction="forward" className="inline" /></>)}
         </Button>
       </div>
 

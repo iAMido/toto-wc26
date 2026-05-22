@@ -386,7 +386,7 @@ export default function HomePage() {
               <p className="text-xs text-amber-200 flex-1">
                 {t('nudge.unpredicted', { count: onboarding.unpredicted })}
               </p>
-              <span className="text-amber-400 text-xs font-bold">›</span>
+              <Chevron direction="forward" className="text-amber-400 text-xs font-bold" />
             </div>
           </Link>
         )}
@@ -425,7 +425,7 @@ export default function HomePage() {
                         <p className={`text-xs font-medium ${step.done ? 'line-through text-muted-foreground' : ''}`}>{cfg.label}</p>
                         <p className="text-[10px] text-muted-foreground truncate">{cfg.desc}</p>
                       </div>
-                      {!step.done && <span className="text-muted-foreground text-xs">›</span>}
+                      {!step.done && <Chevron direction="forward" className="text-muted-foreground text-xs" />}
                     </div>
                   </Link>
                 );
@@ -448,7 +448,7 @@ export default function HomePage() {
                 <p className="font-bold text-sm">{t('home.predictMatches')}</p>
                 <p className="text-xs text-muted-foreground">{t('home.predictMatchesDesc')}</p>
               </div>
-              <span className="text-muted-foreground">›</span>
+              <Chevron direction="forward" className="text-muted-foreground" />
             </div>
           </Link>
 
@@ -461,7 +461,7 @@ export default function HomePage() {
                 <p className="font-bold text-sm">{t('home.myGroups')}</p>
                 <p className="text-xs text-muted-foreground">{t('home.myGroupsDesc')}</p>
               </div>
-              <span className="text-muted-foreground">›</span>
+              <Chevron direction="forward" className="text-muted-foreground" />
             </div>
           </Link>
 
@@ -474,7 +474,7 @@ export default function HomePage() {
                 <p className="font-bold text-sm">{t('home.tournamentPicks')}</p>
                 <p className="text-xs text-muted-foreground">{t('home.tournamentPicksDesc')}</p>
               </div>
-              <span className="text-muted-foreground">›</span>
+              <Chevron direction="forward" className="text-muted-foreground" />
             </div>
           </Link>
         </div>

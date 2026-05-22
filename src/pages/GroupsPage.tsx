@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { generateInviteCode } from '@/lib/invite-code';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Chevron from '@/components/Chevron';
 
 export default function GroupsPage() {
   const { t } = useTranslation();
@@ -194,7 +195,7 @@ export default function GroupsPage() {
                         <p className="text-xs text-muted-foreground font-mono">{g.invite_code}</p>
                       </div>
                     </div>
-                    <span className="text-muted-foreground">›</span>
+                    <Chevron direction="forward" className="text-muted-foreground" />
                   </div>
                 </Link>
               );

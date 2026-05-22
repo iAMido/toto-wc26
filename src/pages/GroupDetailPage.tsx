@@ -7,6 +7,7 @@ import { useRealtimeMatches } from '@/hooks/useRealtimeMatches';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import GroupMatchFeed from '@/components/GroupMatchFeed';
+import Chevron from '@/components/Chevron';
 
 export default function GroupDetailPage() {
   const { t, i18n } = useTranslation();
@@ -151,7 +152,7 @@ export default function GroupDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between pt-4">
           <Link to="/groups" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← {t('common.back')}
+            <Chevron direction="back" className="inline" /> {t('common.back')}
           </Link>
         </div>
 

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { localizedAuthError } from '@/lib/auth-errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Chevron from '@/components/Chevron';
 
 const RESEND_COOLDOWN_SEC = 60;
 const PENDING_INVITE_KEY = 'pendingInviteCode';
@@ -164,7 +165,7 @@ export default function LoginPage() {
             >
               {cooldownLeft > 0
                 ? (lang === 'he' ? `שלח שוב בעוד ${cooldownLeft}ש׳` : `Resend in ${cooldownLeft}s`)
-                : (lang === 'he' ? '← שלח קישור חדש' : '← Send a new link')}
+                : (<><Chevron direction="back" className="inline" /> {lang === 'he' ? 'שלח קישור חדש' : 'Send a new link'}</>)}
             </button>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useRealtimeMatches } from '@/hooks/useRealtimeMatches';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
+import Chevron from '@/components/Chevron';
 
 /**
  * Dedicated standings hub: one tab per group the user belongs to, each
@@ -201,7 +202,7 @@ export default function LeaderboardsPage() {
                     to={`/groups/${activeGroupId}`}
                     className="text-[11px] text-primary hover:underline"
                   >
-                    {lang === 'he' ? 'פתח את עמוד הקבוצה ←' : 'Open group page →'}
+                    {lang === 'he' ? 'פתח את עמוד הקבוצה' : 'Open group page'} <Chevron direction="forward" className="inline" />
                   </Link>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import { useJokerBudget } from '@/hooks/useJokerBudget';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Chevron from '@/components/Chevron';
 
 export default function ProfilePage() {
   const { t, i18n } = useTranslation();
@@ -281,7 +282,7 @@ export default function ProfilePage() {
                 <span className="font-bold text-amber-300">
                   ⚙️ {lang === 'he' ? 'פאנל ניהול' : 'Admin panel'}
                 </span>
-                <span className="text-amber-400/70">›</span>
+                <Chevron direction="forward" className="text-amber-400/70" />
               </div>
               <p className="text-[10px] text-amber-200/60 mt-0.5">
                 {lang === 'he'
