@@ -30,30 +30,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // subsequent navigations won't flash loading.
   const resolvedRef = useRef(false);
 
-  // Memoised evaluate so it's stable across renders
-  const evaluate = useCallback(async (session: { user: User } | null) => {
-    if (!session?.user) {
-      setState({ user: null, loading: false });
-      resolvedRef.current = true;
-      // Only redirect if not already on a public page
-      const path = window.location.pathname;
-      if (path !== '/login' && !path.startsWith('/join/')) {
-        navRef.current('/login', { replace: true });
-      }
-      return;
-    }
+  // Track whether display_name has been confirmed at least once, so we
+  // don't re-check on every auth metadata update (updateUser triggers
+  // onAuthStateChange → user reference changes → effect re-fires).
+  const displayNameConfirmedRef = useRef(false);
 
-    setState({ user: session.user, loading: false });
-    resolvedRef.current = true;
-  }, []);
+  // Memoised evaluate so it's stable across renders
+  const evaluate = useCallback(
+    (event: string, session: { user: User } | null) => {
+      // USER_UPDATED is fired when updateUser() changes metadata (e.g.
+      // display_name edit on the profile page). The session is still valid —
+      // just update the user object, never redirect.
+      if (event === 'USER_UPDATED' && session?.user) {
+        setState({ user: session.user, loading: false });
+        return;
+      }
+
+      if (!session?.user) {
+        // Only redirect to login on actual sign-out, not on transient states.
+        // TOKEN_REFRESHED with null session means the refresh failed —
+        // treat it the same as sign-out.
+        setState({ user: null, loading: false });
+        resolvedRef.current = true;
+        displayNameConfirmedRef.current = false;
+        const path = window.location.pathname;
+        if (path !== '/login' && !path.startsWith('/join/')) {
+          navRef.current('/login', { replace: true });
+        }
+        return;
+      }
+
+      setState({ user: session.user, loading: false });
+      resolvedRef.current = true;
+    },
+    [],
+  );
 
   // One-time session bootstrap + auth listener
   useEffect(() => {
     let cancelled = false;
 
-    supabase.auth.getSession()
+    supabase.auth
+      .getSession()
       .then(({ data: { session } }) => {
-        if (!cancelled) evaluate(session as { user: User } | null);
+        if (!cancelled) evaluate('INITIAL_SESSION', session as { user: User } | null);
       })
       .catch(() => {
         if (!cancelled) {
@@ -62,24 +82,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!cancelled) evaluate(session as { user: User } | null);
-      },
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!cancelled) evaluate(event, session as { user: User } | null);
+    });
 
-    return () => { cancelled = true; subscription.unsubscribe(); };
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [evaluate]);
 
-  // display_name guard — runs on every navigation, but only AFTER
-  // auth has resolved (so it never blocks loading).
+  // display_name guard — runs on navigation changes only (NOT on user
+  // object changes). Once confirmed, stays confirmed until sign-out.
   useEffect(() => {
     if (!resolvedRef.current || !state.user) return;
+    // Already confirmed they have a display_name — skip the DB query.
+    if (displayNameConfirmedRef.current) return;
 
     const path = location.pathname;
-    const skip = path === '/login'
-      || path === '/setup-profile'
-      || path.startsWith('/join/');
+    const skip =
+      path === '/login' || path === '/setup-profile' || path.startsWith('/join/');
     if (skip) return;
 
     const userId = state.user.id;
@@ -91,22 +115,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select('display_name')
           .eq('id', userId)
           .maybeSingle();
-        if (!cancelled && !row?.display_name) {
+        if (cancelled) return;
+        if (!row?.display_name) {
           navRef.current('/setup-profile', { replace: true });
+        } else {
+          // Name confirmed — don't re-check on every auth event.
+          displayNameConfirmedRef.current = true;
         }
       } catch {
-        // don't block
+        // don't block — assume name exists rather than breaking the app
+        if (!cancelled) displayNameConfirmedRef.current = true;
       }
     })();
 
-    return () => { cancelled = true; };
-  }, [location.pathname, state.user]);
+    return () => {
+      cancelled = true;
+    };
+    // Only re-run when the route changes, NOT when the user object
+    // reference changes (which happens on every updateUser call).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
-  return (
-    <AuthContext.Provider value={state}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
 }
 
 /**
