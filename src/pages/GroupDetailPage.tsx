@@ -189,9 +189,6 @@ export default function GroupDetailPage() {
           </p>
         </div>
 
-        {/* Match Feed */}
-        {user && <GroupMatchFeed groupId={id!} userId={user.id} />}
-
         {/* ====== FULL LEADERBOARD ====== */}
         {/* Always render the table when there are members, even before any
             scoring has happened — gives users a sense of who's in the group. */}
@@ -260,6 +257,9 @@ export default function GroupDetailPage() {
             })()}
           </div>
         )}
+
+        {/* Match Feed */}
+        {user && <GroupMatchFeed groupId={id!} userId={user.id} />}
 
         {/* Members */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
