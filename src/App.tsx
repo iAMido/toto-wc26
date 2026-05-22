@@ -16,7 +16,6 @@ import LeaderboardsPage from '@/pages/LeaderboardsPage';
 import AdminPage from '@/pages/AdminPage';
 import SetupProfilePage from '@/pages/SetupProfilePage';
 import JoinGroupPage from '@/pages/JoinGroupPage';
-import PlaceholderPage from '@/pages/PlaceholderPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,7 +52,6 @@ function AppRoutes() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/leaderboards" element={<LeaderboardsPage />} />
           <Route path="/admin" element={<AdminPage />} />
-          <Route path="/leaderboard/:groupId" element={<PlaceholderPage title="Leaderboard" />} />
         </Routes>
       </div>
       {showNav && <BottomNav />}

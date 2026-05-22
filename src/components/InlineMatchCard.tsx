@@ -626,7 +626,7 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                 )}
                 {saveStatus === 'jokerCap' && (
                   <span className="save-indicator error">
-                    🚫 {lang === 'he' ? 'הגעת למקסימום 3 ג׳וקרים' : 'Joker cap reached (3 max)'}
+                    🚫 {t('joker.capReached')}
                   </span>
                 )}
               </div>
