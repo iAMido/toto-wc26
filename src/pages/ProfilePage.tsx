@@ -36,27 +36,44 @@ export default function ProfilePage() {
     mutationFn: async (newName: string) => {
       const trimmed = newName.trim();
       if (trimmed.length < 2) throw new Error('TOO_SHORT');
-      // Write to BOTH auth metadata (for client display) and public.users
-      // (for leaderboard joins). RLS lets users update their own row.
-      const [authRes, dbRes] = await Promise.all([
-        supabase.auth.updateUser({ data: { display_name: trimmed } }),
-        supabase.from('users').update({ display_name: trimmed }).eq('id', user!.id),
-      ]);
-      if (authRes.error) throw authRes.error;
-      if (dbRes.error) throw dbRes.error;
+      if (!user) throw new Error('NOT_AUTHENTICATED');
+
+      // IMPORTANT: update public.users FIRST (source of truth for
+      // leaderboards), THEN auth metadata.  Sequential — NOT parallel —
+      // so the DB row is already committed before updateUser() fires
+      // onAuthStateChange (which triggers a React re-render tree-wide).
+      const { error: dbErr } = await supabase
+        .from('users')
+        .update({ display_name: trimmed })
+        .eq('id', user.id);
+      if (dbErr) throw dbErr;
+
+      // Now update auth metadata so the client-side user object reflects
+      // the new name.  This fires onAuthStateChange → USER_UPDATED, but
+      // by this point the DB is consistent so any downstream refetch is safe.
+      const { error: authErr } = await supabase.auth.updateUser({
+        data: { display_name: trimmed },
+      });
+      if (authErr) throw authErr;
+
       return trimmed;
     },
-    onSuccess: () => {
-      setNameMsg({ ok: true, text: t('profile.nameSaved') });
+    onSuccess: (_trimmed) => {
       setEditingName(false);
-      // Refresh anything that displays the name
+      setNameMsg({ ok: true, text: t('profile.nameSaved') });
+      // Refresh anything that displays the name (leaderboards, group
+      // member lists, home standings).  The auth-level user_metadata is
+      // already up-to-date because updateUser was awaited above.
       queryClient.invalidateQueries({ queryKey: ['group-members'] });
       queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
       queryClient.invalidateQueries({ queryKey: ['home-standings'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-stats'] });
       setTimeout(() => setNameMsg(null), 2500);
     },
     onError: (err: Error) => {
-      const msg = err.message === 'TOO_SHORT' ? t('profile.nameTooShort') : t('common.saveFailed');
+      const msg = err.message === 'TOO_SHORT'
+        ? t('profile.nameTooShort')
+        : t('common.saveFailed');
       setNameMsg({ ok: false, text: msg });
       setTimeout(() => setNameMsg(null), 3500);
     },
@@ -99,7 +116,11 @@ export default function ProfilePage() {
     enabled: !!user,
   });
 
-  if (authLoading) {
+  // Only show the full-page loader on the very first mount while the auth
+  // session is still being resolved.  Once we have a user (or null), we
+  // never return to this state — mutations (like name-save) should NEVER
+  // flash a loading skeleton.
+  if (authLoading && !user) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center">
         <div className="text-center space-y-2">
@@ -156,10 +177,11 @@ export default function ProfilePage() {
                 value={nameDraft}
                 onChange={(e) => setNameDraft(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); saveName.mutate(nameDraft); }
-                  if (e.key === 'Escape') { setEditingName(false); setNameMsg(null); }
+                  if (e.key === 'Enter' && !saveName.isPending) { e.preventDefault(); saveName.mutate(nameDraft); }
+                  if (e.key === 'Escape' && !saveName.isPending) { setEditingName(false); setNameMsg(null); }
                 }}
                 maxLength={40}
+                disabled={saveName.isPending}
                 className="rounded-xl bg-muted/50 text-center text-lg font-bold"
                 aria-label={t('profile.displayName')}
               />
@@ -169,11 +191,19 @@ export default function ProfilePage() {
                   disabled={saveName.isPending || nameDraft.trim().length < 2}
                   className="flex-1 rounded-xl h-10 text-sm font-bold"
                 >
-                  {t('profile.saveName')}
+                  {saveName.isPending ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      {t('common.saving')}
+                    </span>
+                  ) : (
+                    t('profile.saveName')
+                  )}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => { setEditingName(false); setNameMsg(null); }}
+                  disabled={saveName.isPending}
                   className="rounded-xl h-10 text-sm"
                 >
                   {t('common.cancel')}

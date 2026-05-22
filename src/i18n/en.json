@@ -112,6 +112,7 @@
     "createFailed": "Failed to create the group.",
     "retry": "Retry",
     "save": "Save",
+    "saving": "Saving…",
     "cancel": "Cancel",
     "back": "Back",
     "noData": "No data yet."
