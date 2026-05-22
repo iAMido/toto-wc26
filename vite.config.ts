@@ -44,6 +44,13 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Remove old precache entries when SW activates with new hashes
+        cleanupOutdatedCaches: true,
+        // Force new SW to claim all clients immediately
+        clientsClaim: true,
+        skipWaiting: true,
+        // Navigation requests always go to index.html (SPA)
+        navigateFallback: 'index.html',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,json}'],
         runtimeCaching: [
           {
