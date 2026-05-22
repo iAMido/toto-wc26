@@ -9,6 +9,7 @@ import InlineMatchCard from '@/components/InlineMatchCard';
 import HowToPlayModal from '@/components/HowToPlayModal';
 import TopStatsCard from '@/components/TopStatsCard';
 import InstallPrompt from '@/components/InstallPrompt';
+import Chevron from '@/components/Chevron';
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
@@ -336,8 +337,8 @@ export default function HomePage() {
             {/* View all matches link */}
             <Link to="/matches" className="block">
               <div className="text-center py-2">
-                <span className="text-xs text-primary font-medium hover:underline">
-                  {t('feed.viewAll')} →
+                <span className="text-xs text-primary font-medium hover:underline inline-flex items-center gap-1">
+                  {t('feed.viewAll')} <Chevron direction="forward" />
                 </span>
               </div>
             </Link>
