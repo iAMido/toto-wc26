@@ -68,10 +68,21 @@ export default function LeaderboardsPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center">
-        <div className="text-center space-y-2">
-          <span className="text-3xl">🏅</span>
-          <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
+      <div className="min-h-[100dvh]">
+        <div className="max-w-lg mx-auto px-4 pb-4 space-y-4">
+          <div className="text-center pt-6 pb-1">
+            <div className="skeleton h-7 w-40 mx-auto rounded" />
+            <div className="skeleton h-3 w-56 mx-auto rounded mt-2" />
+          </div>
+          <div className="flex gap-2">
+            <div className="skeleton h-10 w-24 rounded-xl" />
+            <div className="skeleton h-10 w-28 rounded-xl" />
+          </div>
+          <div className="skeleton-card p-3 space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="skeleton h-10 rounded-lg" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -136,9 +147,26 @@ export default function LeaderboardsPage() {
         {groups && groups.length > 0 && activeGroupId && (
           <>
             {lbLoading ? (
-              <div className="skeleton-card p-4 space-y-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="skeleton h-10 rounded-lg" />
+              <div className="skeleton-card p-3 space-y-3">
+                {/* Header skeleton */}
+                <div className="grid grid-cols-[2rem_1fr_3rem_3rem_2.5rem_3rem] gap-1 pb-2 border-b border-border">
+                  <div className="skeleton h-3 w-5 mx-auto rounded" />
+                  <div className="skeleton h-3 w-16 rounded" />
+                  <div className="skeleton h-3 w-6 mx-auto rounded" />
+                  <div className="skeleton h-3 w-6 mx-auto rounded" />
+                  <div className="skeleton h-3 w-5 mx-auto rounded" />
+                  <div className="skeleton h-3 w-6 mx-auto rounded" />
+                </div>
+                {/* Row skeletons */}
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="grid grid-cols-[2rem_1fr_3rem_3rem_2.5rem_3rem] gap-1 items-center py-2 px-1">
+                    <div className="skeleton h-5 w-5 mx-auto rounded-full" />
+                    <div className="skeleton h-4 w-24 rounded" />
+                    <div className="skeleton h-4 w-6 mx-auto rounded" />
+                    <div className="skeleton h-4 w-6 mx-auto rounded" />
+                    <div className="skeleton h-4 w-5 mx-auto rounded" />
+                    <div className="skeleton h-5 w-7 mx-auto rounded" />
+                  </div>
                 ))}
               </div>
             ) : leaderboard && leaderboard.length > 0 ? (
