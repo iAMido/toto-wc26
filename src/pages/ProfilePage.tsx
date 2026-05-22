@@ -56,7 +56,7 @@ export default function ProfilePage() {
       setTimeout(() => setNameMsg(null), 2500);
     },
     onError: (err: Error) => {
-      const msg = err.message === 'TOO_SHORT' ? t('profile.nameTooShort') : err.message;
+      const msg = err.message === 'TOO_SHORT' ? t('profile.nameTooShort') : t('common.saveFailed');
       setNameMsg({ ok: false, text: msg });
       setTimeout(() => setNameMsg(null), 3500);
     },

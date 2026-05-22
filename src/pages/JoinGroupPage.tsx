@@ -127,7 +127,7 @@ export default function JoinGroupPage() {
 
       if (insertErr) {
         setPhase('error');
-        setErrorMsg(insertErr.message);
+        setErrorMsg(t('common.joinFailed'));
         return;
       }
 
@@ -214,7 +214,7 @@ export default function JoinGroupPage() {
           <>
             <span className="text-5xl block">⚠️</span>
             <p className="text-sm font-medium text-destructive">
-              {lang === 'he' ? 'הצטרפות נכשלה' : 'Failed to join'}
+              {t('common.joinFailed')}
             </p>
             <p className="text-xs text-muted-foreground break-words max-w-xs">{errorMsg}</p>
             <Button onClick={() => navigate('/groups', { replace: true })} variant="outline" className="rounded-xl mt-2">

@@ -135,7 +135,7 @@ export default function TournamentPredictionsPage() {
         err.message.includes('new row');
       setMsg({
         ok: false,
-        text: locked ? t('tournament.locked') : err.message,
+        text: locked ? t('tournament.locked') : t('common.saveFailed'),
       });
     },
   });

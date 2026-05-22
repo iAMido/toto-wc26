@@ -110,7 +110,7 @@ export default function MatchPredictionPage() {
         err.message.includes('row-level security') ||
         err.message.includes('violates') ||
         err.message.includes('new row');
-      setMsg({ ok: false, text: locked ? t('match.locked') : err.message });
+      setMsg({ ok: false, text: locked ? t('match.locked') : t('common.saveFailed') });
     },
   });
 

@@ -107,6 +107,9 @@
   "common": {
     "loading": "Loading...",
     "error": "Something went wrong.",
+    "saveFailed": "Save failed. Please try again.",
+    "joinFailed": "Failed to join the group.",
+    "createFailed": "Failed to create the group.",
     "retry": "Retry",
     "save": "Save",
     "cancel": "Cancel",

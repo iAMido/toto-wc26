@@ -621,7 +621,7 @@ export default function InlineMatchCard({ match, prediction, userId, expanded, o
                 )}
                 {saveStatus === 'error' && (
                   <span className="save-indicator error">
-                    {lang === 'he' ? '⚠ שמירה נכשלה — נסה שוב' : '⚠ Save failed — try again'}
+                    ⚠ {t('common.saveFailed')}
                   </span>
                 )}
                 {saveStatus === 'jokerCap' && (

@@ -56,8 +56,8 @@ export default function GroupsPage() {
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       navigate(`/groups/${group.id}`);
     },
-    onError: (err: Error) => {
-      setError(err.message);
+    onError: () => {
+      setError(t('common.createFailed'));
       setSuccess(null);
     },
   });
@@ -85,7 +85,7 @@ export default function GroupsPage() {
       } else if (err.message.includes('Already a member')) {
         setError(t('groups.alreadyMember'));
       } else {
-        setError(err.message);
+        setError(t('common.joinFailed'));
       }
       setSuccess(null);
     },
